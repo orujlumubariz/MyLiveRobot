@@ -43,6 +43,12 @@ object Tuning {
     const val SpiralTurns = 2.5f
     const val SpiralSegments = 64
 
+    // Motion (spec 04)
+    const val MaxDtMs = 50f          // clamp frame delta so a stall does not cause a jump
+    const val TauDefaultMs = 90f     // spring time constant
+    const val TauSlowMs = 160f       // slow moods: Sad, Tired, Sleeping
+    const val BackOvershoot = 1.4f   // easeOutBack
+
     // Glow = stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10
     const val GlowSpread = 3f
