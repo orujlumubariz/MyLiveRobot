@@ -27,6 +27,7 @@ class MouthParams(
     var thick: Float = Tuning.MouthThick,
     var dy: Float = 0f,
     var tilt: Float = 0f,
+    var dx: Float = 0f,
     /** 0..1, used by the mouth cross-fade. */
     var alpha: Float = 1f,
 )
@@ -39,4 +40,6 @@ class FaceParams(
     var fy: Float = 0f,
     var glow: Float = Tuning.DefaultGlow,
     var scale: Float = 1f,
+    /** 0..1 for the whole face (Broken blackout). */
+    var alpha: Float = 1f,
 )

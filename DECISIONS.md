@@ -25,3 +25,7 @@
 - Task 8: blink-swap = eyes close 90 ms, kinds swap and numbers snap while closed, open 140 ms (easeOutBack for Surprised/Curious/Love, else easeInOutCubic). At the swap the mouth only snaps if its kind changes; otherwise its numbers keep easing.
 - Task 8: renderer now allows eye `open` up to 1.25 (`Tuning.MaxEyeOpen`) so the easeOutBack pop is visible. Mouth-only kind changes cross-fade via `MouthParams.alpha` (60 ms out, 60 ms in).
 - Task 8: mood requests within 400 ms of the last change are queued, latest wins; requesting the current mood cancels the queue. A blink already in progress is cut short when a change starts (rare, not noticeable).
+- Task 9: per-mood idles live in `IdleMotion.kt` (pure Kotlin, tested) and are added on top of drift in `FaceAnimator`. Glow overrides (Charging, Low battery, Broken) blend in over 300 ms; Angry multiplies glow by 1.0..1.1.
+- Task 9: added `MouthParams.dx` (Broken jitter) and `FaceParams.alpha` (Broken blackout, whole face).
+- Task 9: not built: Wink's optional "right eye re-opens to RECT every 5 s". Denying stays static until the ShakeNo gesture (task 10). Sleeping entry/wake sequences stay with task 14.
+- Task 9: Surprised ring pulse starts 250 ms after the mood starts, so it lands after the blink-swap has reopened the eyes.

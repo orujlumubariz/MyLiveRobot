@@ -33,7 +33,8 @@ object FaceRenderer {
     private val rect = RectF()
     private val radii = FloatArray(8)
     private lateinit var c: Canvas
-    private var alphaMul = 1f // 0..1, set per feature for the mouth cross-fade
+    private var alphaMul = 1f // 0..1, set per feature (face alpha, mouth cross-fade)
+    private var faceAlpha = 1f
 
     fun DrawScope.drawFace(face: FaceParams) {
         val s = FaceLayout.scale(size.width, size.height)
@@ -43,11 +44,14 @@ object FaceRenderer {
         c.scale(s, s)
         c.translate(face.fx, face.fy)
         c.scale(face.scale, face.scale, Tuning.VirtualWidth / 2f, Tuning.VirtualHeight / 2f)
+        faceAlpha = face.alpha.coerceIn(0f, 1f)
+        alphaMul = faceAlpha
 
         drawEye(face.leftEye, Tuning.LeftEyeX, 1f, face.glow)
         drawEye(face.rightEye, Tuning.RightEyeX, -1f, face.glow)
         drawMouth(face.mouth, face.glow)
         c.restore()
+        alphaMul = faceAlpha
     }
 
     // ---- eyes -------------------------------------------------------------------------
@@ -168,10 +172,10 @@ object FaceRenderer {
     // ---- mouth ------------------------------------------------------------------------
 
     private fun drawMouth(m: MouthParams, glow: Float) {
-        val x = Tuning.MouthX
+        val x = Tuning.MouthX + m.dx
         val cy = Tuning.MouthY + m.dy
         val half = max(m.w - m.thick, 0f) / 2f
-        alphaMul = m.alpha.coerceIn(0f, 1f)
+        alphaMul = faceAlpha * m.alpha.coerceIn(0f, 1f)
         c.save()
         c.rotate(m.tilt, x, Tuning.MouthY)
         path.reset()
@@ -208,13 +212,13 @@ object FaceRenderer {
                 batteryBar(x, cy, m)
                 fillShape(path, glow)
                 c.restore()
-                alphaMul = 1f
+                alphaMul = faceAlpha
                 return
             }
         }
         strokeShape(path, m.thick, glow)
         c.restore()
-        alphaMul = 1f
+        alphaMul = faceAlpha
     }
 
     /** Battery body plus terminal nub, as outline strokes, in [path]. */

@@ -8,7 +8,8 @@ import kotlin.random.Random
  * allocation-free after construction.
  *
  * Layers (spec 04): mood (springs toward the table row, kept in [base]), look, blink,
- * drift + breathing. The gesture and glow layers come later.
+ * drift + breathing, then the per-mood idle micro-animation ([IdleMotion]) on top.
+ * The gesture layer comes later.
  *
  * Mood changes (spec 04): if an eye kind differs, a blink-swap runs (close, swap kinds and snap
  * numbers while closed, open). If only the mouth kind differs, the mouth cross-fades. Otherwise
@@ -45,10 +46,12 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     private val blinker = Blinker(rng)
     private val look = LookWander(rng)
     private val drift = Drift()
+    private val idle = IdleMotion(rng)
 
     init {
         Moods.apply(base, target)
         copyBaseToFace()
+        idle.start(initial)
     }
 
     fun setMood(newMood: Mood) {
@@ -84,6 +87,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
             }
         }
         if (lookScale(newMood) == 0f) look.recentre()
+        idle.start(newMood)
     }
 
     fun update(dtMs: Float) {
@@ -129,6 +133,23 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         face.fx = drift.fx
         face.fy = drift.fy
         face.scale = drift.scale
+
+        // 5. per-mood idle micro-animation, added on top
+        idle.update(dt)
+        face.fy += idle.fy
+        face.leftEye.dy += idle.eyeDy
+        face.rightEye.dy += idle.eyeDy + idle.rightEyeDy
+        face.leftEye.tilt += idle.tilt
+        face.rightEye.tilt += idle.tilt
+        face.leftEye.w *= idle.eyeWMul
+        face.rightEye.w *= idle.eyeWMul
+        face.leftEye.spin = idle.spinLeft
+        face.rightEye.spin = idle.spinRight
+        face.mouth.dx = idle.mouthDx
+        face.mouth.dy += idle.mouthDy
+        if (idle.glowAbs >= 0f) face.glow += (idle.glowAbs - face.glow) * idle.glowBlend
+        face.glow *= idle.glowMul
+        face.alpha = idle.faceAlpha
     }
 
     private fun blinkMult(kind: EyeKind) = if (Blinker.canBlink(kind)) blinker.mult else 1f
@@ -210,6 +231,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         d.thick = s.thick
         d.dy = s.dy
         d.tilt = s.tilt
+        d.dx = s.dx
         face.glow = base.glow
     }
 
