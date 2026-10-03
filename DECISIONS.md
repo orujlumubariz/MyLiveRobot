@@ -29,3 +29,4 @@
 - Task 9: added `MouthParams.dx` (Broken jitter) and `FaceParams.alpha` (Broken blackout, whole face).
 - Task 9: not built: Wink's optional "right eye re-opens to RECT every 5 s". Denying stays static until the ShakeNo gesture (task 10). Sleeping entry/wake sequences stay with task 14.
 - Task 9: Surprised ring pulse starts 250 ms after the mood starts, so it lands after the blink-swap has reopened the eyes.
+- Wink idle (Mubariz asked for it, the optional row in spec 04): every 5 s the closed right eye closes, becomes the left eye's shape, opens for 400 ms, then closes and winks again. Left eye never changes. The cycle timer starts once the mood has fully arrived and resets if the mood changes. Replaces the earlier "not built" note for Wink.

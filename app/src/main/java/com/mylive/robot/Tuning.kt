@@ -129,6 +129,8 @@ object Tuning {
     const val ChargingGlowMin = 0.5f
     const val ChargingGlowMax = 1.0f
     const val ChargingGlowPeriodMs = 2400f
+    const val WinkReopenEveryMs = 5000f      // Wink: right eye re-opens this often...
+    const val WinkReopenHoldMs = 400f        // ...and stays open this long
     const val LowBatteryGlowMin = 0.25f
     const val LowBatteryGlowMax = 0.4f
     const val LowBatteryGlowPeriodMs = 1600f

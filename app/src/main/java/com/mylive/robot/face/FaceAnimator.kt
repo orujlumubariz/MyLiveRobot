@@ -39,6 +39,13 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     private var nextSpec: MoodSpec = target
     private var nextTauMs = tauMs
 
+    // Wink idle: the closed right eye periodically re-opens to the left eye's shape, then winks again.
+    private enum class Wink { OFF, WAIT, CLOSE1, OPEN1, HOLD, CLOSE2, OPEN2 }
+    private var wink = Wink.OFF
+    private var winkMs = 0f
+    private var rightMult = 1f // right-eye-only `open` multiplier owned by the wink idle
+    private var rightTarget: EyeSpec = target.right
+
     private var fade = Fade.NONE
     private var fadeMs = 0f
     private var mouthAlpha = 1f
@@ -52,6 +59,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         Moods.apply(base, target)
         copyBaseToFace()
         idle.start(initial)
+        if (initial == Mood.Wink) wink = Wink.WAIT
     }
 
     fun setMood(newMood: Mood) {
@@ -75,11 +83,15 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         sinceMoodMs = 0f
         nextSpec = spec
         nextTauMs = tauFor(newMood)
+        wink = if (newMood == Mood.Wink) Wink.WAIT else Wink.OFF
+        winkMs = 0f
+        rightMult = 1f
         if (eyesDiffer) {
             swap = Swap.CLOSING
             swapMs = 0f
         } else {
             target = spec
+            rightTarget = spec.right
             tauMs = nextTauMs
             if (mouthDiffers) {
                 fade = Fade.OUT
@@ -96,11 +108,12 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         queued?.let { if (sinceMoodMs >= Tuning.MinMoodChangeMs) startMood(it) }
         updateSwap(dt)
         updateFade(dt)
+        updateWink(dt)
 
         // 1. mood layer
         val k = Easing.springFactor(dt, tauMs)
         easeEye(base.leftEye, target.left, k)
-        easeEye(base.rightEye, target.right, k)
+        easeEye(base.rightEye, rightTarget, k)
         val m = base.mouth
         m.w = Easing.approach(m.w, target.mouth.w, k)
         m.thick = Easing.approach(m.thick, target.mouth.thick, k)
@@ -119,7 +132,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         // 3. blink layer (the blink-swap multiplier applies to every kind, the blink only to some)
         blinker.update(dt, blinkProfile(mood), sinceMoodMs > Tuning.BlinkSuppressAfterMoodMs)
         face.leftEye.open = base.leftEye.open * swapMult * blinkMult(face.leftEye.kind)
-        face.rightEye.open = base.rightEye.open * swapMult * blinkMult(face.rightEye.kind)
+        face.rightEye.open = base.rightEye.open * swapMult * rightMult * blinkMult(face.rightEye.kind)
         face.mouth.alpha = mouthAlpha
 
         // 4. drift + breathing
@@ -166,6 +179,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
                     swapMult = 0f
                     val mouthDiffers = nextSpec.mouth.kind != target.mouth.kind
                     target = nextSpec
+                    rightTarget = target.right
                     tauMs = nextTauMs
                     Moods.applyEye(base.leftEye, target.left)
                     Moods.applyEye(base.rightEye, target.right)
@@ -184,6 +198,50 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
                 }
             }
         }
+    }
+
+    /** Wink idle: right eye closes, becomes the left eye's shape, opens, holds, then reverses. */
+    private fun updateWink(dt: Float) {
+        when (wink) {
+            Wink.OFF -> return
+            Wink.WAIT -> {
+                if (swap != Swap.NONE) return // wait until the mood has fully arrived
+                winkMs += dt
+                if (winkMs >= Tuning.WinkReopenEveryMs) { wink = Wink.CLOSE1; winkMs = 0f }
+            }
+            Wink.CLOSE1 -> if (closeRight(dt, target.left)) wink = Wink.OPEN1
+            Wink.OPEN1 -> if (openRight(dt)) wink = Wink.HOLD
+            Wink.HOLD -> {
+                winkMs += dt
+                if (winkMs >= Tuning.WinkReopenHoldMs) { wink = Wink.CLOSE2; winkMs = 0f }
+            }
+            Wink.CLOSE2 -> if (closeRight(dt, target.right)) wink = Wink.OPEN2
+            Wink.OPEN2 -> if (openRight(dt)) wink = Wink.WAIT
+        }
+    }
+
+    /** Closes the right eye; when shut, swaps it to [next] and returns true. */
+    private fun closeRight(dt: Float, next: EyeSpec): Boolean {
+        winkMs += dt
+        if (winkMs < Tuning.SwapCloseMs) {
+            rightMult = 1f - Easing.easeInOutCubic(winkMs / Tuning.SwapCloseMs)
+            return false
+        }
+        rightMult = 0f
+        Moods.applyEye(base.rightEye, next)
+        rightTarget = next
+        winkMs = 0f
+        return true
+    }
+
+    private fun openRight(dt: Float): Boolean {
+        winkMs += dt
+        val t = (winkMs / Tuning.SwapOpenMs).coerceAtMost(1f)
+        rightMult = Easing.easeInOutCubic(t)
+        if (t < 1f) return false
+        rightMult = 1f
+        winkMs = 0f
+        return true
     }
 
     /** Mouth-only kind change: fade out, switch, fade in. */

@@ -129,4 +129,40 @@ class TransitionTest {
         repeat(200) { a.update(dt) }
         assertEquals(Mood.Happy, a.mood)
     }
+
+    @Test fun winkRightEyeReopensEveryFiveSecondsAndLeftEyeIsUntouched() {
+        val a = animator(Mood.Wink)
+        var prev = a.face.rightEye.kind
+        val toRect = ArrayList<Float>()
+        val toArc = ArrayList<Float>()
+        var t = 0f
+        while (t < 30_000f) {
+            a.update(dt)
+            t += dt
+            assertEquals(EyeKind.RECT, a.face.leftEye.kind)
+            val k = a.face.rightEye.kind
+            if (k != prev) {
+                assertTrue("half-morph at $t open=${a.face.rightEye.open}", a.face.rightEye.open < 0.02f)
+                if (k == EyeKind.RECT) toRect.add(t) else toArc.add(t)
+                prev = k
+            }
+        }
+        assertTrue("toRect=$toRect toArc=$toArc", toRect.size in 4..5)
+        assertEquals(toRect.size, toArc.size + (if (prev == EyeKind.RECT) 1 else 0))
+        // open (RECT) for the 140 ms opening + 400 ms hold + 90 ms closing = ~630 ms
+        toArc.forEachIndexed { i, end -> assertEquals(630f, end - toRect[i], 40f) }
+        // cycles repeat about every 5 s plus the transition time
+        toRect.zipWithNext { x, y -> assertEquals(5860f, y - x, 150f) }
+    }
+
+    @Test fun leavingWinkMidCycleRestoresTheRightEye() {
+        val a = animator(Mood.Wink)
+        var t = 0f
+        while (t < 5300f) { a.update(dt); t += dt } // inside the first re-open
+        a.setMood(Mood.Happy)
+        repeat(300) { a.update(dt) }
+        assertEquals(EyeKind.ARC_UP, a.face.rightEye.kind)
+        assertEquals(EyeKind.ARC_UP, a.face.leftEye.kind)
+        assertEquals(Mood.Happy, a.mood)
+    }
 }
