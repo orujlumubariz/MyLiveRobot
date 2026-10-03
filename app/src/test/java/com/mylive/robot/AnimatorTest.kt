@@ -47,26 +47,34 @@ class AnimatorTest {
         assertEquals(0.632f, k, 1e-3f)
     }
 
-    @Test fun moodSwitchSwapsKindsInstantlyAndEasesNumbers() {
+    @Test fun moodSwitchSwapsKindsAfterTheEyesCloseAndEasesNumbers() {
         val a = FaceAnimator(Mood.Neutral)
         a.setMood(Mood.Happy)
+        assertEquals(EyeKind.RECT, a.face.leftEye.kind) // not swapped yet: blink-swap closes first
+        repeat(40) { a.update(16f) }
         assertEquals(EyeKind.ARC_UP, a.face.leftEye.kind)
-        assertEquals(80f, a.face.leftEye.w, 0f) // numbers have not moved yet
-        a.update(16f)
-        assertTrue(a.face.leftEye.w > 80f && a.face.leftEye.w < 110f)
         repeat(200) { a.update(16f) }
         assertEquals(110f, a.face.leftEye.w, 0.01f)
         assertEquals(70f, a.face.leftEye.h, 0.01f)
         assertEquals(Moods.spec(Mood.Happy).glow, a.face.glow, 0.001f)
     }
 
+    @Test fun sameKindMoodChangeEasesWithoutSwap() {
+        val a = FaceAnimator(Mood.Neutral)
+        a.setMood(Mood.Angry)
+        a.update(16f)
+        assertTrue(a.face.leftEye.w > 80f && a.face.leftEye.w < 110f)
+        assertEquals(EyeKind.RECT, a.face.leftEye.kind)
+    }
+
     @Test fun slowMoodsEaseSlower() {
-        val fast = FaceAnimator(Mood.Neutral).apply { setMood(Mood.Angry) }
-        val slow = FaceAnimator(Mood.Neutral).apply { setMood(Mood.Tired) }
-        fast.update(50f)
+        // Tired -> Sleeping and Happy -> Charging both keep ARC kinds, so only numbers ease.
+        val slow = FaceAnimator(Mood.Tired).apply { setMood(Mood.Sleeping) }
+        val fast = FaceAnimator(Mood.Happy).apply { setMood(Mood.Charging) }
         slow.update(50f)
-        val fastFrac = (fast.face.leftEye.w - 80f) / (110f - 80f)
-        val slowFrac = (slow.face.leftEye.w - 80f) / (110f - 80f)
+        fast.update(50f)
+        val slowFrac = (40f - slow.face.leftEye.h) / (40f - 30f)
+        val fastFrac = (70f - fast.face.leftEye.h) / (70f - 50f)
         assertTrue(fastFrac > slowFrac)
     }
 

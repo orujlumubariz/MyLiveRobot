@@ -49,6 +49,13 @@ object Tuning {
     const val TauSlowMs = 160f       // slow moods: Sad, Tired, Sleeping
     const val BackOvershoot = 1.4f   // easeOutBack
 
+    // Mood transitions (spec 04)
+    const val SwapCloseMs = 90f        // blink-swap: eyes close
+    const val SwapOpenMs = 140f        // blink-swap: eyes open on the new face
+    const val MouthFadeMs = 120f       // cross-fade when only the mouth kind changes
+    const val MinMoodChangeMs = 400f   // latest request is queued until this has passed
+    const val MaxEyeOpen = 1.25f       // easeOutBack may overshoot open past 1
+
     // Blink (spec 04)
     const val BlinkCloseMs = 70f
     const val BlinkHoldMs = 40f

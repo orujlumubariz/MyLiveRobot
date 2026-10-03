@@ -27,6 +27,8 @@ class MouthParams(
     var thick: Float = Tuning.MouthThick,
     var dy: Float = 0f,
     var tilt: Float = 0f,
+    /** 0..1, used by the mouth cross-fade. */
+    var alpha: Float = 1f,
 )
 
 class FaceParams(

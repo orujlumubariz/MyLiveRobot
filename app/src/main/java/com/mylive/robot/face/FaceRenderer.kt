@@ -33,6 +33,7 @@ object FaceRenderer {
     private val rect = RectF()
     private val radii = FloatArray(8)
     private lateinit var c: Canvas
+    private var alphaMul = 1f // 0..1, set per feature for the mouth cross-fade
 
     fun DrawScope.drawFace(face: FaceParams) {
         val s = FaceLayout.scale(size.width, size.height)
@@ -55,7 +56,7 @@ object FaceRenderer {
     private fun drawEye(e: EyeParams, anchorX: Float, innerSign: Float, glow: Float) {
         val cx = anchorX + e.dx
         val cy = Tuning.EyeY + e.dy
-        val open = e.open.coerceIn(0f, 1f)
+        val open = e.open.coerceIn(0f, Tuning.MaxEyeOpen)
         val w = e.w
         path.reset()
         when (e.kind) {
@@ -170,6 +171,7 @@ object FaceRenderer {
         val x = Tuning.MouthX
         val cy = Tuning.MouthY + m.dy
         val half = max(m.w - m.thick, 0f) / 2f
+        alphaMul = m.alpha.coerceIn(0f, 1f)
         c.save()
         c.rotate(m.tilt, x, Tuning.MouthY)
         path.reset()
@@ -206,11 +208,13 @@ object FaceRenderer {
                 batteryBar(x, cy, m)
                 fillShape(path, glow)
                 c.restore()
+                alphaMul = 1f
                 return
             }
         }
         strokeShape(path, m.thick, glow)
         c.restore()
+        alphaMul = 1f
     }
 
     /** Battery body plus terminal nub, as outline strokes, in [path]. */
@@ -239,7 +243,7 @@ object FaceRenderer {
 
     // ---- primitives: shape + stacked glow layers --------------------------------------
 
-    private fun glowAlpha(glow: Float) = (255f * Tuning.GlowAlpha * glow / Tuning.GlowLayers).toInt()
+    private fun glowAlpha(glow: Float) = (255f * alphaMul * Tuning.GlowAlpha * glow / Tuning.GlowLayers).toInt()
 
     /** Filled shape; glow is a wide stroke of the outline behind it. */
     private fun fillShape(p: Path, glow: Float) {
@@ -249,6 +253,7 @@ object FaceRenderer {
             stroke.alpha = a
             c.drawPath(p, stroke)
         }
+        fill.alpha = (255f * alphaMul).toInt()
         c.drawPath(p, fill)
     }
 
@@ -260,7 +265,7 @@ object FaceRenderer {
             c.drawPath(p, stroke)
         }
         stroke.strokeWidth = thick
-        stroke.alpha = 255
+        stroke.alpha = (255f * alphaMul).toInt()
         c.drawPath(p, stroke)
     }
 

@@ -139,17 +139,21 @@ object Moods {
     fun apply(face: FaceParams, spec: MoodSpec) {
         applyEye(face.leftEye, spec.left)
         applyEye(face.rightEye, spec.right)
-        face.mouth.kind = spec.mouth.kind
-        face.mouth.w = spec.mouth.w
-        face.mouth.thick = spec.mouth.thick
-        face.mouth.dy = spec.mouth.dy
-        face.mouth.tilt = spec.mouth.tilt
+        applyMouth(face.mouth, spec.mouth)
         face.glow = spec.glow
     }
 
     fun apply(face: FaceParams, mood: Mood) = apply(face, spec(mood))
 
-    private fun applyEye(e: EyeParams, s: EyeSpec) {
+    fun applyMouth(m: MouthParams, s: MouthSpec) {
+        m.kind = s.kind
+        m.w = s.w
+        m.thick = s.thick
+        m.dy = s.dy
+        m.tilt = s.tilt
+    }
+
+    fun applyEye(e: EyeParams, s: EyeSpec) {
         e.kind = s.kind
         e.w = s.w
         e.h = s.h

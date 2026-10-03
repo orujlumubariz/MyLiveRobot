@@ -22,3 +22,6 @@
 - Task 7: LowBattery uses the Tired blink profile (spec says "slow tired blinks"); blinking is suppressed for 500 ms after a mood change (Tuning.BlinkSuppressAfterMoodMs) until gestures exist.
 - Task 7: look wander applies to every eye kind except it is range 0 in Sleeping and Crazy; Wink's open eye and arc eye move together.
 - Task 7: drift/breathing amplitude and period ease with tau 400 ms between moods, so entering Sleeping never makes the face jump.
+- Task 8: blink-swap = eyes close 90 ms, kinds swap and numbers snap while closed, open 140 ms (easeOutBack for Surprised/Curious/Love, else easeInOutCubic). At the swap the mouth only snaps if its kind changes; otherwise its numbers keep easing.
+- Task 8: renderer now allows eye `open` up to 1.25 (`Tuning.MaxEyeOpen`) so the easeOutBack pop is visible. Mouth-only kind changes cross-fade via `MouthParams.alpha` (60 ms out, 60 ms in).
+- Task 8: mood requests within 400 ms of the last change are queued, latest wins; requesting the current mood cancels the queue. A blink already in progress is cut short when a change starts (rare, not noticeable).

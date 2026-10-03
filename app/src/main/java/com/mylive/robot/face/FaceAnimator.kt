@@ -8,8 +8,11 @@ import kotlin.random.Random
  * allocation-free after construction.
  *
  * Layers (spec 04): mood (springs toward the table row, kept in [base]), look, blink,
- * drift + breathing. The gesture and glow layers come later. Kinds switch instantly for now;
- * the blink-swap that hides the switch arrives in task 8.
+ * drift + breathing. The gesture and glow layers come later.
+ *
+ * Mood changes (spec 04): if an eye kind differs, a blink-swap runs (close, swap kinds and snap
+ * numbers while closed, open). If only the mouth kind differs, the mouth cross-fades. Otherwise
+ * the numbers just ease. Requests closer than [Tuning.MinMoodChangeMs] are queued, latest wins.
  */
 class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     /** What the renderer draws: [base] plus the ambient layers. */
@@ -24,6 +27,20 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     private var target: MoodSpec = Moods.spec(initial)
     private var tauMs: Float = tauFor(initial)
     private var sinceMoodMs = Float.MAX_VALUE / 2f
+    private var queued: Mood? = null
+
+    private enum class Swap { NONE, CLOSING, OPENING }
+    private enum class Fade { NONE, OUT, IN }
+
+    private var swap = Swap.NONE
+    private var swapMs = 0f
+    private var swapMult = 1f // eye `open` multiplier owned by the blink-swap
+    private var nextSpec: MoodSpec = target
+    private var nextTauMs = tauMs
+
+    private var fade = Fade.NONE
+    private var fadeMs = 0f
+    private var mouthAlpha = 1f
 
     private val blinker = Blinker(rng)
     private val look = LookWander(rng)
@@ -35,20 +52,46 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     }
 
     fun setMood(newMood: Mood) {
+        if (newMood == mood) {
+            queued = null // asking for the current mood cancels a queued change
+            return
+        }
+        if (sinceMoodMs < Tuning.MinMoodChangeMs) {
+            queued = newMood
+        } else {
+            startMood(newMood)
+        }
+    }
+
+    private fun startMood(newMood: Mood) {
+        val spec = Moods.spec(newMood)
+        val eyesDiffer = spec.left.kind != target.left.kind || spec.right.kind != target.right.kind
+        val mouthDiffers = spec.mouth.kind != target.mouth.kind
         mood = newMood
-        target = Moods.spec(newMood)
-        tauMs = tauFor(newMood)
+        queued = null
         sinceMoodMs = 0f
-        base.leftEye.kind = target.left.kind
-        base.rightEye.kind = target.right.kind
-        base.mouth.kind = target.mouth.kind
-        copyBaseToFace()
+        nextSpec = spec
+        nextTauMs = tauFor(newMood)
+        if (eyesDiffer) {
+            swap = Swap.CLOSING
+            swapMs = 0f
+        } else {
+            target = spec
+            tauMs = nextTauMs
+            if (mouthDiffers) {
+                fade = Fade.OUT
+                fadeMs = 0f
+            }
+        }
         if (lookScale(newMood) == 0f) look.recentre()
     }
 
     fun update(dtMs: Float) {
         val dt = dtMs.coerceIn(0f, Tuning.MaxDtMs)
         sinceMoodMs += dt
+        queued?.let { if (sinceMoodMs >= Tuning.MinMoodChangeMs) startMood(it) }
+        updateSwap(dt)
+        updateFade(dt)
 
         // 1. mood layer
         val k = Easing.springFactor(dt, tauMs)
@@ -69,10 +112,11 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         face.leftEye.dy = base.leftEye.dy + look.dy
         face.rightEye.dy = base.rightEye.dy + look.dy
 
-        // 3. blink layer
+        // 3. blink layer (the blink-swap multiplier applies to every kind, the blink only to some)
         blinker.update(dt, blinkProfile(mood), sinceMoodMs > Tuning.BlinkSuppressAfterMoodMs)
-        if (Blinker.canBlink(face.leftEye.kind)) face.leftEye.open = base.leftEye.open * blinker.mult
-        if (Blinker.canBlink(face.rightEye.kind)) face.rightEye.open = base.rightEye.open * blinker.mult
+        face.leftEye.open = base.leftEye.open * swapMult * blinkMult(face.leftEye.kind)
+        face.rightEye.open = base.rightEye.open * swapMult * blinkMult(face.rightEye.kind)
+        face.mouth.alpha = mouthAlpha
 
         // 4. drift + breathing
         val sleeping = mood == Mood.Sleeping
@@ -85,6 +129,65 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         face.fx = drift.fx
         face.fy = drift.fy
         face.scale = drift.scale
+    }
+
+    private fun blinkMult(kind: EyeKind) = if (Blinker.canBlink(kind)) blinker.mult else 1f
+
+    /** Blink-swap: close, swap kinds and snap numbers while closed, open. */
+    private fun updateSwap(dt: Float) {
+        when (swap) {
+            Swap.NONE -> return
+            Swap.CLOSING -> {
+                swapMs += dt
+                if (swapMs < Tuning.SwapCloseMs) {
+                    swapMult = 1f - Easing.easeInOutCubic(swapMs / Tuning.SwapCloseMs)
+                } else {
+                    swapMult = 0f
+                    val mouthDiffers = nextSpec.mouth.kind != target.mouth.kind
+                    target = nextSpec
+                    tauMs = nextTauMs
+                    Moods.applyEye(base.leftEye, target.left)
+                    Moods.applyEye(base.rightEye, target.right)
+                    if (mouthDiffers) Moods.applyMouth(base.mouth, target.mouth)
+                    swap = Swap.OPENING
+                    swapMs = 0f
+                }
+            }
+            Swap.OPENING -> {
+                swapMs += dt
+                val t = (swapMs / Tuning.SwapOpenMs).coerceAtMost(1f)
+                swapMult = if (popsIn(mood)) Easing.easeOutBack(t) else Easing.easeInOutCubic(t)
+                if (t >= 1f) {
+                    swapMult = 1f
+                    swap = Swap.NONE
+                }
+            }
+        }
+    }
+
+    /** Mouth-only kind change: fade out, switch, fade in. */
+    private fun updateFade(dt: Float) {
+        when (fade) {
+            Fade.NONE -> return
+            Fade.OUT -> {
+                fadeMs += dt
+                val half = Tuning.MouthFadeMs / 2f
+                if (fadeMs < half) {
+                    mouthAlpha = 1f - fadeMs / half
+                } else {
+                    mouthAlpha = 0f
+                    Moods.applyMouth(base.mouth, target.mouth)
+                    fade = Fade.IN
+                    fadeMs = 0f
+                }
+            }
+            Fade.IN -> {
+                fadeMs += dt
+                val half = Tuning.MouthFadeMs / 2f
+                mouthAlpha = (fadeMs / half).coerceAtMost(1f)
+                if (fadeMs >= half) fade = Fade.NONE
+            }
+        }
     }
 
     private fun easeEye(e: EyeParams, t: EyeSpec, k: Float) {
@@ -128,6 +231,9 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
             Mood.Sad, Mood.Tired, Mood.Sleeping -> Tuning.TauSlowMs
             else -> Tuning.TauDefaultMs
         }
+
+        /** Moods whose eyes pop open with easeOutBack after a blink-swap. */
+        fun popsIn(mood: Mood): Boolean = mood == Mood.Surprised || mood == Mood.Curious || mood == Mood.Love
 
         /** Scale of the idle look range per mood (spec 04). Crazy ignores looking (spiral). */
         fun lookScale(mood: Mood): Float = when (mood) {
