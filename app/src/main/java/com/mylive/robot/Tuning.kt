@@ -165,6 +165,10 @@ object Tuning {
     const val LookAroundSegmentMs = 350f
     const val LookAroundMs = 1100f
 
+    // Debug panel
+    const val DebugHoldMs = 1000L           // two-finger hold to open
+    const val DebugPanelWidthDp = 340
+
     // Glow = stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10
     const val GlowSpread = 3f
