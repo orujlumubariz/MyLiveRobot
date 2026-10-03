@@ -30,3 +30,7 @@
 - Task 9: not built: Wink's optional "right eye re-opens to RECT every 5 s". Denying stays static until the ShakeNo gesture (task 10). Sleeping entry/wake sequences stay with task 14.
 - Task 9: Surprised ring pulse starts 250 ms after the mood starts, so it lands after the blink-swap has reopened the eyes.
 - Wink idle (Mubariz asked for it, the optional row in spec 04): every 5 s the closed right eye closes, becomes the left eye's shape, opens for 400 ms, then closes and winks again. Left eye never changes. The cycle timer starts once the mood has fully arrived and resets if the mood changes. Replaces the earlier "not built" note for Wink.
+- Wink re-open idle: disabled by default (Mubariz did not like it). Code stays; set `Tuning.WinkReopenEnabled = true` to bring it back.
+- Task 10: gestures live in `GestureLayer.kt` (pure Kotlin, tested) and `FaceAnimator.play(gesture)`. Gesture faces (ShakeNo=Denying, Jolt=Surprised, GlitchBurst=Broken, Giggle=Happy, Yawn=Tired) appear instantly (no blink-swap) so the motion lands on time; the return to the previous mood uses the normal blink-swap. NodYes, Bounce and LookAround keep the current face.
+- Task 10: a mood requested while a gesture face is showing is stored and applied when the gesture ends; blinking is off while a gesture runs. Gestures bypass the 400 ms mood-change gap.
+- Task 10: TEMPORARY second row in the debug strip triggers each gesture. The strip overlaps the lowest part of the face; the hidden debug panel (task 11) replaces it.

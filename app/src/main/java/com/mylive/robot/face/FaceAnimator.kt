@@ -9,13 +9,17 @@ import kotlin.random.Random
  *
  * Layers (spec 04): mood (springs toward the table row, kept in [base]), look, blink,
  * drift + breathing, then the per-mood idle micro-animation ([IdleMotion]) on top.
- * The gesture layer comes later.
+ * Then the gesture layer: one-shots that may swap the face and return to the previous mood.
  *
  * Mood changes (spec 04): if an eye kind differs, a blink-swap runs (close, swap kinds and snap
  * numbers while closed, open). If only the mouth kind differs, the mouth cross-fades. Otherwise
  * the numbers just ease. Requests closer than [Tuning.MinMoodChangeMs] are queued, latest wins.
  */
-class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
+class FaceAnimator(
+    initial: Mood = Mood.Neutral,
+    rng: Random = Random.Default,
+    private val winkReopen: Boolean = Tuning.WinkReopenEnabled,
+) {
     /** What the renderer draws: [base] plus the ambient layers. */
     val face = FaceParams()
 
@@ -54,15 +58,37 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
     private val look = LookWander(rng)
     private val drift = Drift()
     private val idle = IdleMotion(rng)
+    private val gesture = GestureLayer(rng)
+
+    /** True while a gesture runs. */
+    val gestureActive: Boolean get() = gesture.active
+
+    private var faceOverridden = false // a gesture swapped the face and must hand it back
+    private var returnMood: Mood = initial
 
     init {
         Moods.apply(base, target)
         copyBaseToFace()
         idle.start(initial)
-        if (initial == Mood.Wink) wink = Wink.WAIT
+        if (initial == Mood.Wink && winkReopen) wink = Wink.WAIT
+    }
+
+    /** Plays a one-shot gesture. Gestures that have a face show it instantly, then return to the previous mood. */
+    fun play(g: Gesture) {
+        if (!faceOverridden) returnMood = mood
+        val gestureFace = g.face
+        if (gestureFace != null && mood != gestureFace) {
+            snapTo(gestureFace)
+            faceOverridden = true
+        }
+        gesture.start(g)
     }
 
     fun setMood(newMood: Mood) {
+        if (faceOverridden) {
+            returnMood = newMood // applied when the gesture ends
+            return
+        }
         if (newMood == mood) {
             queued = null // asking for the current mood cancels a queued change
             return
@@ -74,6 +100,28 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         }
     }
 
+    /** Instant face change (no blink-swap) used by gestures. */
+    private fun snapTo(newMood: Mood) {
+        val spec = Moods.spec(newMood)
+        mood = newMood
+        target = spec
+        rightTarget = spec.right
+        tauMs = tauFor(newMood)
+        nextSpec = spec
+        queued = null
+        sinceMoodMs = 0f
+        swap = Swap.NONE
+        swapMult = 1f
+        fade = Fade.NONE
+        mouthAlpha = 1f
+        wink = Wink.OFF
+        rightMult = 1f
+        Moods.apply(base, spec)
+        copyBaseToFace()
+        if (lookScale(newMood) == 0f) look.recentre()
+        idle.start(newMood)
+    }
+
     private fun startMood(newMood: Mood) {
         val spec = Moods.spec(newMood)
         val eyesDiffer = spec.left.kind != target.left.kind || spec.right.kind != target.right.kind
@@ -83,7 +131,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         sinceMoodMs = 0f
         nextSpec = spec
         nextTauMs = tauFor(newMood)
-        wink = if (newMood == Mood.Wink) Wink.WAIT else Wink.OFF
+        wink = if (newMood == Mood.Wink && winkReopen) Wink.WAIT else Wink.OFF
         winkMs = 0f
         rightMult = 1f
         if (eyesDiffer) {
@@ -130,7 +178,7 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         face.rightEye.dy = base.rightEye.dy + look.dy
 
         // 3. blink layer (the blink-swap multiplier applies to every kind, the blink only to some)
-        blinker.update(dt, blinkProfile(mood), sinceMoodMs > Tuning.BlinkSuppressAfterMoodMs)
+        blinker.update(dt, blinkProfile(mood), sinceMoodMs > Tuning.BlinkSuppressAfterMoodMs && !gesture.active)
         face.leftEye.open = base.leftEye.open * swapMult * blinkMult(face.leftEye.kind)
         face.rightEye.open = base.rightEye.open * swapMult * rightMult * blinkMult(face.rightEye.kind)
         face.mouth.alpha = mouthAlpha
@@ -163,6 +211,27 @@ class FaceAnimator(initial: Mood = Mood.Neutral, rng: Random = Random.Default) {
         if (idle.glowAbs >= 0f) face.glow += (idle.glowAbs - face.glow) * idle.glowBlend
         face.glow *= idle.glowMul
         face.alpha = idle.faceAlpha
+
+        // 6. gesture layer
+        val gestureDone = gesture.update(dt)
+        if (gesture.active) {
+            face.fx += gesture.fx
+            face.fy += gesture.fy
+            face.scale *= gesture.scaleMul
+            face.leftEye.open *= gesture.eyeOpenMul
+            face.rightEye.open *= gesture.eyeOpenMul
+            face.mouth.w += gesture.mouthWAdd
+            face.mouth.thick += gesture.mouthThickAdd
+            if (gesture.lookActive) {
+                face.leftEye.dx = gesture.lookDx
+                face.rightEye.dx = gesture.lookDx
+            }
+            if (gesture.glowAbs >= 0f) face.glow = gesture.glowAbs
+        }
+        if (gestureDone && faceOverridden) {
+            faceOverridden = false
+            if (returnMood != mood) startMood(returnMood)
+        }
     }
 
     private fun blinkMult(kind: EyeKind) = if (Blinker.canBlink(kind)) blinker.mult else 1f

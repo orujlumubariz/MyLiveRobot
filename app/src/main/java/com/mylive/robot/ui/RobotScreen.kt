@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.mylive.robot.Tuning
 import com.mylive.robot.face.FaceAnimator
 import com.mylive.robot.face.FaceRenderer.drawFace
+import com.mylive.robot.face.Gesture
 import com.mylive.robot.face.Mood
 
 @Composable
@@ -64,22 +66,30 @@ fun RobotScreen() {
         DebugStrip(
             onGallery = { page = if (page >= 1) -1 else page + 1 },
             onMood = { animator.setMood(it); page = -1 },
+            onGesture = { animator.play(it); page = -1 },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
 
 @Composable
-private fun DebugStrip(onGallery: () -> Unit, onMood: (Mood) -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier
-            .fillMaxWidth()
-            .background(Color(0xCC0B1214))
-            .horizontalScroll(rememberScrollState()),
-    ) {
-        TextButton(onClick = onGallery) { Text("Gallery", color = Color.White, fontSize = 12.sp) }
-        Mood.values().forEach { m ->
-            TextButton(onClick = { onMood(m) }) { Text(m.name, color = Tuning.FaceColor, fontSize = 12.sp) }
+private fun DebugStrip(
+    onGallery: () -> Unit,
+    onMood: (Mood) -> Unit,
+    onGesture: (Gesture) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.fillMaxWidth().background(Color(0xCC0B1214))) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+            TextButton(onClick = onGallery) { Text("Gallery", color = Color.White, fontSize = 12.sp) }
+            Mood.values().forEach { m ->
+                TextButton(onClick = { onMood(m) }) { Text(m.name, color = Tuning.FaceColor, fontSize = 12.sp) }
+            }
+        }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+            Gesture.values().forEach { g ->
+                TextButton(onClick = { onGesture(g) }) { Text(g.name, color = Color.White, fontSize = 12.sp) }
+            }
         }
     }
 }

@@ -131,7 +131,7 @@ class TransitionTest {
     }
 
     @Test fun winkRightEyeReopensEveryFiveSecondsAndLeftEyeIsUntouched() {
-        val a = animator(Mood.Wink)
+        val a = FaceAnimator(Mood.Wink, Random(21), winkReopen = true)
         var prev = a.face.rightEye.kind
         val toRect = ArrayList<Float>()
         val toArc = ArrayList<Float>()
@@ -156,7 +156,7 @@ class TransitionTest {
     }
 
     @Test fun leavingWinkMidCycleRestoresTheRightEye() {
-        val a = animator(Mood.Wink)
+        val a = FaceAnimator(Mood.Wink, Random(21), winkReopen = true)
         var t = 0f
         while (t < 5300f) { a.update(dt); t += dt } // inside the first re-open
         a.setMood(Mood.Happy)

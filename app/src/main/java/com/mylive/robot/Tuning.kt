@@ -129,11 +129,41 @@ object Tuning {
     const val ChargingGlowMin = 0.5f
     const val ChargingGlowMax = 1.0f
     const val ChargingGlowPeriodMs = 2400f
+    const val WinkReopenEnabled = false      // Mubariz did not like it; flip to true to bring it back
     const val WinkReopenEveryMs = 5000f      // Wink: right eye re-opens this often...
     const val WinkReopenHoldMs = 400f        // ...and stays open this long
     const val LowBatteryGlowMin = 0.25f
     const val LowBatteryGlowMax = 0.4f
     const val LowBatteryGlowPeriodMs = 1600f
+
+    // Gestures (spec 04)
+    const val ShakeNoMs = 700f
+    const val ShakeNoUnits = 40f
+    const val ShakeNoCycles = 3f
+    const val NodYesMs = 600f
+    const val NodYesUnits = 25f
+    const val NodYesCycles = 2f
+    const val BounceUpMs = 150f
+    const val BounceDownMs = 200f
+    const val BounceSquashMs = 100f
+    const val BounceMs = 450f
+    const val BounceUnits = 30f
+    const val BounceSquash = 0.96f
+    const val JoltMs = 500f
+    const val JoltScale = 1.08f
+    const val JoltTauMs = 130f
+    const val GlitchMs = 350f
+    const val GlitchMinFrames = 3
+    const val GlitchMaxFrames = 5
+    const val GlitchShakeUnits = 30f
+    const val GiggleMs = 800f
+    const val GiggleUnits = 5f
+    const val GiggleHz = 12f
+    const val YawnMs = 1800f
+    const val YawnMouthGrow = 50f      // 90 -> 140
+    const val YawnThickGrow = 26f      // 14 -> 40
+    const val LookAroundSegmentMs = 350f
+    const val LookAroundMs = 1100f
 
     // Glow = stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10
