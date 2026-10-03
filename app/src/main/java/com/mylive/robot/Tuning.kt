@@ -35,6 +35,11 @@ object Tuning {
     const val MouthSmileHeightRatio = 0.3f     // ARC_SMILE height, fraction of mouth w
     const val MouthZigzagSegments = 4
     const val MouthZigzagAmpRatio = 0.09f      // ZIGZAG half-amplitude, fraction of mouth w
+    const val BatteryThick = 10f               // BATTERY_LOW outline stroke
+    const val BatteryHeightRatio = 0.5f        // body height, fraction of mouth w
+    const val BatteryNubWidthRatio = 0.09f     // terminal nub width, fraction of mouth w
+    const val BatteryNubHeightRatio = 0.4f     // terminal nub height, fraction of body height
+    const val BatteryBarFraction = 0.2f        // charge left, fraction of inner width
     const val SpiralTurns = 2.5f
     const val SpiralSegments = 64
 

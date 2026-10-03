@@ -31,6 +31,7 @@ class MouthSpec(
     val w: Float = Tuning.MouthWidth,
     val dy: Float = 0f,
     val tilt: Float = 0f,
+    val thick: Float = Tuning.MouthThick,
 )
 
 /** One row of the mood table (spec 03). Left and right default to the same eye. */
@@ -126,8 +127,8 @@ object Moods {
             glow = 1.0f, // pulses 0.5..1.0 (task 9); bolt glyph arrives with task 15
         ),
         Mood.LowBattery to MoodSpec(
-            left = EyeSpec(EyeKind.RECT, w = 80f, h = 150f, open = 0.55f, lidTop = 0.3f),
-            mouth = MouthSpec(w = 70f),
+            left = EyeSpec(EyeKind.RECT, w = 80f, h = 150f, open = 0.55f, lidTop = 0.3f, dy = 10f),
+            mouth = MouthSpec(MouthKind.BATTERY_LOW, w = 200f, dy = 10f, thick = Tuning.BatteryThick),
             glow = 0.35f,
         ),
     )
@@ -140,7 +141,7 @@ object Moods {
         applyEye(face.rightEye, spec.right)
         face.mouth.kind = spec.mouth.kind
         face.mouth.w = spec.mouth.w
-        face.mouth.thick = Tuning.MouthThick
+        face.mouth.thick = spec.mouth.thick
         face.mouth.dy = spec.mouth.dy
         face.mouth.tilt = spec.mouth.tilt
         face.glow = spec.glow

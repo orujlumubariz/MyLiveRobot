@@ -200,9 +200,41 @@ object FaceRenderer {
                     path.lineTo(x - half + 2f * half * i / n, cy + sign * amp)
                 }
             }
+            MouthKind.BATTERY_LOW -> {
+                batteryOutline(x, cy, m)
+                strokeShape(path, m.thick, glow)
+                batteryBar(x, cy, m)
+                fillShape(path, glow)
+                c.restore()
+                return
+            }
         }
         strokeShape(path, m.thick, glow)
         c.restore()
+    }
+
+    /** Battery body plus terminal nub, as outline strokes, in [path]. */
+    private fun batteryOutline(x: Float, cy: Float, m: MouthParams) {
+        val h = m.w * Tuning.BatteryHeightRatio
+        val r = h * 0.2f
+        rect.set(x - m.w / 2f, cy - h / 2f, x + m.w / 2f, cy + h / 2f)
+        path.addRoundRect(rect, r, r, Path.Direction.CW)
+        val nubW = m.w * Tuning.BatteryNubWidthRatio
+        val nubH = h * Tuning.BatteryNubHeightRatio
+        rect.set(x + m.w / 2f + m.thick / 2f, cy - nubH / 2f, x + m.w / 2f + m.thick / 2f + nubW, cy + nubH / 2f)
+        path.addRoundRect(rect, nubW / 2f, nubW / 2f, Path.Direction.CW)
+    }
+
+    /** The one remaining bar of charge, filled, at the left inside the body. In [path]. */
+    private fun batteryBar(x: Float, cy: Float, m: MouthParams) {
+        val h = m.w * Tuning.BatteryHeightRatio
+        val gap = m.thick * 0.9f
+        val inner = m.w - m.thick
+        val left = x - m.w / 2f + m.thick / 2f + gap
+        val barH = h - m.thick - 2f * gap
+        rect.set(left, cy - barH / 2f, left + inner * Tuning.BatteryBarFraction, cy + barH / 2f)
+        path.reset()
+        path.addRoundRect(rect, 3f, 3f, Path.Direction.CW)
     }
 
     // ---- primitives: shape + stacked glow layers --------------------------------------

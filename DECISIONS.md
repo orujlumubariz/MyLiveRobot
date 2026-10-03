@@ -12,3 +12,5 @@
 - Task 5: moods are rows in `Moods.kt` (`Mood` enum + `MoodSpec`); `Moods.apply(face, mood)` copies a row into FaceParams in place. Full battery = Happy (no separate row). Wink's closed eye is ARC_UP, as on the sheet.
 - Task 5: the `renderMood(mood): ImageBitmap` snapshot test hook from spec 03 is not built; the debug gallery (tap to cycle face, kinds, moods) covers visual checks. Revisit if automated snapshot tests are wanted.
 - Task 5: Charging bolt glyph and glow pulse are deferred (tasks 9 and 15).
+- Task 5 (Mubariz's call): LowBattery mouth = battery icon with one bar of charge (`MouthKind.BATTERY_LOW`, w 200), eyes stay half-lidded. Replaces the plain dash so the face is readable without explanation. A bar blink/flicker can be added in task 9.
+- Task 5: Waking face is a placeholder; Mubariz wants to improve it through its animation (tasks 8/9/14).
