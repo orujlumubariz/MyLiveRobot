@@ -58,6 +58,21 @@ class DebugState {
     var charging by mutableStateOf(false)
     var fakeTimeOn by mutableStateOf(false)
     var minuteOfDay by mutableIntStateOf(12 * 60)
+
+    /** When off, the behaviour engine is ignored so a forced mood or gesture stays put. */
+    var autoBehavior by mutableStateOf(true)
+
+    /** Base state and running reaction, written by the screen for display. */
+    var engineStatus by mutableStateOf("")
+
+    /** Sets a quick scenario by faking the inputs the engine reads. */
+    fun scenario(minute: Int, battery: Int, isCharging: Boolean) {
+        fakeTimeOn = true
+        minuteOfDay = minute
+        fakeBatteryOn = true
+        batteryPercent = battery
+        charging = isCharging
+    }
 }
 
 /**
@@ -106,6 +121,7 @@ fun DebugPanel(
     onMood: (Mood) -> Unit,
     onGesture: (Gesture) -> Unit,
     onPage: (Int) -> Unit,
+    onWake: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -131,6 +147,22 @@ fun DebugPanel(
                     FilterChip(selected = page == i - 1, onClick = { onPage(i - 1) }, label = { Text(label) })
                 }
             }
+
+            Section("Behaviour")
+            LabeledSwitch("Auto behaviour (engine)", state.autoBehavior) { state.autoBehavior = it }
+            Text(state.engineStatus, color = Color.White, fontSize = 13.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AssistChip(onClick = { state.scenario(12 * 60, 80, false) }, label = { Text("Awake") })
+                AssistChip(onClick = { state.scenario(23 * 60 + 30, 80, false) }, label = { Text("Sleeping") })
+                AssistChip(onClick = { state.scenario(12 * 60, 60, true) }, label = { Text("Charging") })
+                AssistChip(onClick = { state.scenario(12 * 60, 12, false) }, label = { Text("Low battery") })
+                AssistChip(onClick = onWake, label = { Text("Touch (wake)") })
+            }
+            Text(
+                "A forced mood lasts until the engine changes the face; switch auto off to hold it.",
+                color = Color.Gray,
+                fontSize = 11.sp,
+            )
 
             Section("Mood")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -165,6 +165,34 @@ object Tuning {
     const val LookAroundSegmentMs = 350f
     const val LookAroundMs = 1100f
 
+    // Behaviour engine (spec 05)
+    const val ReactionDebounceMs = 150L        // same-priority touch reactions closer than this are ignored
+    const val IdleSleepMs = 10L * 60_000L
+    const val SleepStartMinute = 23 * 60       // 23:00
+    const val WakeMinute = 7 * 60              // 07:00
+    const val WakeForMs = 3L * 60_000L         // touch in the sleep window wakes the robot this long
+    const val DimWhileSleeping = true          // one flag, see spec 05
+    const val SleepBrightness = 0.05f
+    const val BrightnessNormal = -1f           // WindowManager BRIGHTNESS_OVERRIDE_NONE
+    const val LowBatteryPercent = 15
+    const val CriticalBatteryPercent = 5
+    const val CriticalYawnEveryMs = 60_000L
+    const val MorningStartMinute = 7 * 60 + 30
+    const val AfternoonStartMinute = 12 * 60
+    const val EveningStartMinute = 18 * 60
+    const val YawnStartMinute = 21 * 60
+    const val YawnEveryMs = 300_000L
+    const val YawnJitterMs = 30_000L
+    const val DriftRestMinMs = 20_000L         // time on the plain face between idle moods
+    const val DriftRestMaxMs = 60_000L
+    const val DriftHoldMinMs = 10_000L         // how long a picked idle mood stays
+    const val DriftHoldMaxMs = 40_000L
+    const val LookAroundMinMs = 90_000L
+    const val LookAroundMaxMs = 180_000L
+    const val LookAroundAfternoonMinMs = 45_000L
+    const val LookAroundAfternoonMaxMs = 90_000L
+    const val GestureRetryMs = 5_000L          // retry delay when a timer gesture was outranked
+
     // Debug panel
     const val DebugHoldMs = 1000L           // two-finger hold to open
     const val DebugPanelWidthDp = 340
