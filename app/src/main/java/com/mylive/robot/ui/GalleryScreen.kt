@@ -27,6 +27,8 @@ import com.mylive.robot.face.FaceParams
 import com.mylive.robot.face.FaceRenderer.drawFace
 import com.mylive.robot.face.MouthKind
 import com.mylive.robot.face.MouthParams
+import com.mylive.robot.face.Mood
+import com.mylive.robot.face.Moods
 
 /** Debug gallery: every eye and mouth kind, each cell outlined at the virtual canvas edge. */
 private class Cell(val label: String, val face: FaceParams)
@@ -40,7 +42,7 @@ private fun face(
     mouth = mouth,
 )
 
-private fun buildCells() = listOf(
+private fun kindCells() = listOf(
     Cell("RECT", face()),
     Cell("RECT lid + tilt", face { kind = EyeKind.RECT; w = 110f; h = 90f; tilt = 22f; lidTop = 0.3f }),
     Cell("DROOP", face { kind = EyeKind.DROOP; w = 110f; h = 100f; tilt = -18f; lidTop = 0.35f; dy = 15f }),
@@ -56,11 +58,18 @@ private fun buildCells() = listOf(
     Cell("Mouth ARC_FROWN", face(MouthParams(MouthKind.ARC_FROWN, w = 100f, dy = 15f))),
 )
 
-private const val Columns = 5
+private fun moodCells() = Mood.values().map { m ->
+    Cell(m.name, FaceParams().also { Moods.apply(it, m) })
+}
 
+
+/** Debug gallery pages: 0 = every eye/mouth kind, 1 = every mood. */
 @Composable
-fun GalleryScreen() {
-    val cells = remember { buildCells() }
+fun GalleryScreen(page: Int) {
+    val kinds = remember { kindCells() }
+    val moods = remember { moodCells() }
+    val cells = if (page == 0) kinds else moods
+    val columns = if (page == 0) 5 else 6
     Column(
         Modifier
             .fillMaxSize()
@@ -69,7 +78,7 @@ fun GalleryScreen() {
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        cells.chunked(Columns).forEach { row ->
+        cells.chunked(columns).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { cell ->
                     Column(Modifier.weight(1f)) {
@@ -82,7 +91,7 @@ fun GalleryScreen() {
                         Text(cell.label, color = Tuning.FaceColor, fontSize = 12.sp)
                     }
                 }
-                repeat(Columns - row.size) { Spacer(Modifier.weight(1f)) }
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

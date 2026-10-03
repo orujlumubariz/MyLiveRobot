@@ -9,3 +9,6 @@
 - Task 4: added `thick` and `spin` to EyeParams and `tilt` to MouthParams (spec 03 needs them). Fully closed RECT shrinks to a line as thick as the stroke.
 - Task 4: TEMPORARY gallery toggle = tap anywhere. Replaced by the two-finger debug panel in task 11.
 - Task 4 (Mubariz's call): Heart/Love mouth = small smile (new `MouthKind.ARC_SMILE`); Chevron/Denying mouth = zigzag (new `MouthKind.ZIGZAG`, w 140). This overrides the DASH for Love and Denying in spec 03; use these in `Moods.kt` (task 5).
+- Task 5: moods are rows in `Moods.kt` (`Mood` enum + `MoodSpec`); `Moods.apply(face, mood)` copies a row into FaceParams in place. Full battery = Happy (no separate row). Wink's closed eye is ARC_UP, as on the sheet.
+- Task 5: the `renderMood(mood): ImageBitmap` snapshot test hook from spec 03 is not built; the debug gallery (tap to cycle face, kinds, moods) covers visual checks. Revisit if automated snapshot tests are wanted.
+- Task 5: Charging bolt glyph and glow pulse are deferred (tasks 9 and 15).

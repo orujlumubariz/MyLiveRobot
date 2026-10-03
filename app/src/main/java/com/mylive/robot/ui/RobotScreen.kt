@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -19,16 +19,16 @@ import com.mylive.robot.face.FaceRenderer.drawFace
 @Composable
 fun RobotScreen() {
     val face = remember { FaceParams() }
-    // TEMPORARY (until the debug panel, task 11): tap anywhere to toggle the gallery.
-    var showGallery by remember { mutableStateOf(false) }
+    // TEMPORARY (until the debug panel, task 11): tap anywhere to cycle face -> kinds -> moods.
+    var page by remember { mutableIntStateOf(-1) }
     Box(
         Modifier
             .fillMaxSize()
             .background(Tuning.BackgroundColor)
-            .pointerInput(Unit) { detectTapGestures { showGallery = !showGallery } },
+            .pointerInput(Unit) { detectTapGestures { page = if (page >= 1) -1 else page + 1 } },
     ) {
-        if (showGallery) {
-            GalleryScreen()
+        if (page >= 0) {
+            GalleryScreen(page)
         } else {
             // Face is centred on the full screen, not the cutout-safe area, so it looks centred to the eye.
             Canvas(Modifier.fillMaxSize()) { drawFace(face) }
