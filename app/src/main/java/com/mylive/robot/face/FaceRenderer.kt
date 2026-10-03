@@ -186,6 +186,20 @@ object FaceRenderer {
                 rect.set(x - m.w / 2f, cy - h / 2f, x + m.w / 2f, cy + 1.5f * h)
                 path.arcTo(rect, 180f, 180f, true)
             }
+            MouthKind.ARC_SMILE -> {
+                val h = m.w * Tuning.MouthSmileHeightRatio
+                rect.set(x - m.w / 2f, cy - 1.5f * h, x + m.w / 2f, cy + h / 2f)
+                path.arcTo(rect, 0f, 180f, true)
+            }
+            MouthKind.ZIGZAG -> {
+                val n = Tuning.MouthZigzagSegments
+                val amp = m.w * Tuning.MouthZigzagAmpRatio
+                path.moveTo(x - half, cy + amp)
+                for (i in 1..n) {
+                    val sign = if (i % 2 == 1) -1f else 1f
+                    path.lineTo(x - half + 2f * half * i / n, cy + sign * amp)
+                }
+            }
         }
         strokeShape(path, m.thick, glow)
         c.restore()

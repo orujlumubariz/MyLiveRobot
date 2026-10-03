@@ -4,7 +4,7 @@ import com.mylive.robot.Tuning
 
 enum class EyeKind { RECT, DROOP, ARC_UP, ARC_DOWN, RING, X, SPIRAL, HEART, CHEV_L, CHEV_R, LINE }
 
-enum class MouthKind { DASH, CHEVRON_V, ARC_FROWN }
+enum class MouthKind { DASH, CHEVRON_V, ARC_FROWN, ARC_SMILE, ZIGZAG }
 
 /** Mutable on purpose: the animator updates these in place, no allocation per frame. */
 class EyeParams(

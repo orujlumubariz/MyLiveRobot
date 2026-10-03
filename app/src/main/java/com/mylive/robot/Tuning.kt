@@ -32,6 +32,9 @@ object Tuning {
     const val ChevronHalfWidthRatio = 1f / 3f  // CHEV_L/R half width, fraction of w
     const val MouthChevronDepthRatio = 0.35f   // CHEVRON_V depth, fraction of mouth w
     const val MouthFrownHeightRatio = 0.3f     // ARC_FROWN height, fraction of mouth w
+    const val MouthSmileHeightRatio = 0.3f     // ARC_SMILE height, fraction of mouth w
+    const val MouthZigzagSegments = 4
+    const val MouthZigzagAmpRatio = 0.09f      // ZIGZAG half-amplitude, fraction of mouth w
     const val SpiralTurns = 2.5f
     const val SpiralSegments = 64
 
