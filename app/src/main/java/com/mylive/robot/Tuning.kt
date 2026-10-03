@@ -25,6 +25,15 @@ object Tuning {
     const val MouthWidth = 110f
     const val MouthThick = 14f
     const val DefaultGlow = 0.8f
+    const val EyeStroke = 14f
+
+    // Shape proportions
+    const val DroopOuterRatio = 0.9f           // outer-bottom corner radius of DROOP, fraction of w
+    const val ChevronHalfWidthRatio = 1f / 3f  // CHEV_L/R half width, fraction of w
+    const val MouthChevronDepthRatio = 0.35f   // CHEVRON_V depth, fraction of mouth w
+    const val MouthFrownHeightRatio = 0.3f     // ARC_FROWN height, fraction of mouth w
+    const val SpiralTurns = 2.5f
+    const val SpiralSegments = 64
 
     // Glow = stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10

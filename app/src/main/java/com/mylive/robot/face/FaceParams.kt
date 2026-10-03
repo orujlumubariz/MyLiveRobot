@@ -2,9 +2,9 @@ package com.mylive.robot.face
 
 import com.mylive.robot.Tuning
 
-enum class EyeKind { RECT }
+enum class EyeKind { RECT, DROOP, ARC_UP, ARC_DOWN, RING, X, SPIRAL, HEART, CHEV_L, CHEV_R, LINE }
 
-enum class MouthKind { DASH }
+enum class MouthKind { DASH, CHEVRON_V, ARC_FROWN }
 
 /** Mutable on purpose: the animator updates these in place, no allocation per frame. */
 class EyeParams(
@@ -16,6 +16,9 @@ class EyeParams(
     var lidTop: Float = 0f,
     var dx: Float = 0f,
     var dy: Float = 0f,
+    var thick: Float = Tuning.EyeStroke,
+    /** Spiral rotation in degrees. */
+    var spin: Float = 0f,
 )
 
 class MouthParams(
@@ -23,6 +26,7 @@ class MouthParams(
     var w: Float = Tuning.MouthWidth,
     var thick: Float = Tuning.MouthThick,
     var dy: Float = 0f,
+    var tilt: Float = 0f,
 )
 
 class FaceParams(
