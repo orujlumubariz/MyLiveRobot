@@ -49,6 +49,40 @@ object Tuning {
     const val TauSlowMs = 160f       // slow moods: Sad, Tired, Sleeping
     const val BackOvershoot = 1.4f   // easeOutBack
 
+    // Blink (spec 04)
+    const val BlinkCloseMs = 70f
+    const val BlinkHoldMs = 40f
+    const val BlinkOpenMs = 110f
+    const val BlinkMinIntervalMs = 2500f
+    const val BlinkMaxIntervalMs = 6000f
+    const val BlinkDoubleChance = 0.2f
+    const val BlinkDoubleGapMs = 180f
+    const val TiredBlinkCloseMs = 160f
+    const val TiredBlinkHoldMs = 120f
+    const val TiredBlinkOpenMs = 220f
+    const val TiredBlinkMinIntervalMs = 1500f
+    const val TiredBlinkMaxIntervalMs = 3500f
+    const val BlinkSuppressAfterMoodMs = 500f  // no blinking while a mood change settles
+
+    // Look wander (spec 04)
+    const val LookMinIntervalMs = 1500f
+    const val LookMaxIntervalMs = 4000f
+    const val LookMoveMs = 180f
+    const val LookRangeX = 45f
+    const val LookRangeY = 25f
+    const val LookCentreChance = 0.35f
+
+    // Drift and breathing (spec 04)
+    const val DriftAmpX = 12f
+    const val DriftAmpY = 8f
+    const val DriftSleepingMul = 0.3f
+    const val DriftCrazyMul = 1.5f
+    const val BreathPeriodMs = 4000f
+    const val BreathAmp = 0.015f
+    const val BreathSleepPeriodMs = 6000f
+    const val BreathSleepAmp = 0.025f
+    const val TauAmbientMs = 400f    // eases drift/breathing changes between moods
+
     // Glow = stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10
     const val GlowSpread = 3f

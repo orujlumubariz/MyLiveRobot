@@ -18,3 +18,7 @@
 - Task 6: until the blink-swap (task 8), a mood switch changes eye/mouth *kinds* instantly while numbers ease, so some switches look odd (e.g. a spiral growing from RECT size). Expected.
 - Task 6: TEMPORARY bottom strip of mood buttons plus a "Gallery" button replaces the tap-to-cycle gallery. Both go away with the debug panel (task 11).
 - Task 6 perf check on the test phone (2340x1080): about 61 fps, jank ~0%, with 10 glow layers. `dumpsys gfxinfo` GPU percentiles were noisy (GPU clock scaling), so redo a profiler check on a mid-range device in task 16.
+- Task 7: FaceAnimator now keeps `base` (mood layer, eased numbers) and `face` (what is drawn = base + look + blink + drift/breathing). New files: `Blinker.kt`, `LookWander.kt`, `Drift.kt`, each pure Kotlin with an injectable `Random` for tests.
+- Task 7: LowBattery uses the Tired blink profile (spec says "slow tired blinks"); blinking is suppressed for 500 ms after a mood change (Tuning.BlinkSuppressAfterMoodMs) until gestures exist.
+- Task 7: look wander applies to every eye kind except it is range 0 in Sleeping and Crazy; Wink's open eye and arc eye move together.
+- Task 7: drift/breathing amplitude and period ease with tau 400 ms between moods, so entering Sleeping never makes the face jump.
