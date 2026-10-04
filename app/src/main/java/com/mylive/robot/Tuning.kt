@@ -251,7 +251,10 @@ object Tuning {
     const val DebugHoldMs = 1000L           // two-finger hold to open
     const val DebugPanelWidthDp = 340
 
-    // Glow = stacked, progressively wider, translucent copies of the shape
+    // Glow: the stacked layers below are drawn into a bitmap this many times smaller than the screen and
+    // stretched up with smoothing under the sharp face. Cheap, and the upscaling softens the glow.
+    const val GlowDownscale = 6
+    // Fallback (API < 28): stacked, progressively wider, translucent copies of the shape
     const val GlowLayers = 10
     const val GlowSpread = 3f
     const val GlowAlpha = 0.25f

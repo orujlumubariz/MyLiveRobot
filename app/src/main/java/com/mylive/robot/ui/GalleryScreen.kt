@@ -24,6 +24,7 @@ import com.mylive.robot.Tuning
 import com.mylive.robot.face.EyeKind
 import com.mylive.robot.face.EyeParams
 import com.mylive.robot.face.FaceParams
+import com.mylive.robot.face.FaceRenderer
 import com.mylive.robot.face.FaceRenderer.drawFace
 import com.mylive.robot.face.MouthKind
 import com.mylive.robot.face.MouthParams
@@ -87,7 +88,7 @@ fun GalleryScreen(page: Int) {
                                 .fillMaxWidth()
                                 .aspectRatio(Tuning.VirtualWidth / Tuning.VirtualHeight)
                                 .border(1.dp, Color(0x33FFFFFF)),
-                        ) { drawFace(cell.face) }
+                        ) { drawFace(cell.face, FaceRenderer.Pass.Both) }
                         Text(cell.label, color = Tuning.FaceColor, fontSize = 12.sp)
                     }
                 }

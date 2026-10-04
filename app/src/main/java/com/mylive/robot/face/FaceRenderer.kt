@@ -1,5 +1,6 @@
 package com.mylive.robot.face
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -28,6 +29,26 @@ object FaceRenderer {
         strokeJoin = Paint.Join.ROUND
         color = argb
     }
+    /** Which parts of the face one pass paints. */
+    enum class Pass {
+        /** Sharp face plus the stacked-layer glow, all at full resolution (small cells, tests). */
+        Both,
+
+        /** Sharp face only: drawn on top of the low-resolution glow bitmap. */
+        Sharp,
+
+        /** Only the stacked glow layers, for the small glow bitmap. */
+        GlowOnly,
+    }
+
+    // The glow lives in a small bitmap that is redrawn every frame (same params as the sharp face, so it
+    // can never lag) and stretched over the screen with smoothing.
+    private var glowBitmap: Bitmap? = null
+    private var glowCanvas: Canvas? = null
+    private val glowDst = RectF()
+    private val glowDraw = Paint(Paint.FILTER_BITMAP_FLAG).apply { isFilterBitmap = true }
+
+    private var pass = Pass.Both
     private val path = Path()
     private val lid = Path()
     private val rect = RectF()
@@ -36,11 +57,37 @@ object FaceRenderer {
     private var alphaMul = 1f // 0..1, set per feature (face alpha, mouth cross-fade)
     private var faceAlpha = 1f
 
-    fun DrawScope.drawFace(face: FaceParams) {
-        val s = FaceLayout.scale(size.width, size.height)
-        c = drawContext.canvas.nativeCanvas
+    /**
+     * Draws the face. With [which] = null: the glow first, in a small bitmap stretched under the face,
+     * then the sharp face. Pass [Pass.Both] to draw everything at full resolution instead.
+     */
+    fun DrawScope.drawFace(face: FaceParams, which: Pass? = null) {
+        val canvas = drawContext.canvas.nativeCanvas
+        if (which != null) {
+            drawPass(canvas, face, which, size.width, size.height)
+            return
+        }
+        val gw = (size.width / Tuning.GlowDownscale).toInt().coerceAtLeast(1)
+        val gh = (size.height / Tuning.GlowDownscale).toInt().coerceAtLeast(1)
+        var bitmap = glowBitmap
+        if (bitmap == null || bitmap.width != gw || bitmap.height != gh) {
+            bitmap = Bitmap.createBitmap(gw, gh, Bitmap.Config.ARGB_8888)
+            glowBitmap = bitmap
+            glowCanvas = Canvas(bitmap)
+        }
+        bitmap.eraseColor(0)
+        drawPass(glowCanvas!!, face, Pass.GlowOnly, gw.toFloat(), gh.toFloat())
+        glowDst.set(0f, 0f, size.width, size.height)
+        canvas.drawBitmap(bitmap, null, glowDst, glowDraw)
+        drawPass(canvas, face, Pass.Sharp, size.width, size.height)
+    }
+
+    private fun drawPass(canvas: Canvas, face: FaceParams, which: Pass, width: Float, height: Float) {
+        pass = which
+        val s = FaceLayout.scale(width, height)
+        c = canvas
         c.save()
-        c.translate(FaceLayout.offsetX(size.width, s), FaceLayout.offsetY(size.height, s))
+        c.translate(FaceLayout.offsetX(width, s), FaceLayout.offsetY(height, s))
         c.scale(s, s)
         c.translate(face.fx, face.fy)
         c.scale(face.scale, face.scale, Tuning.VirtualWidth / 2f, Tuning.VirtualHeight / 2f)
@@ -272,22 +319,28 @@ object FaceRenderer {
 
     /** Filled shape; glow is a wide stroke of the outline behind it. */
     private fun fillShape(p: Path, glow: Float) {
-        val a = glowAlpha(glow)
-        for (i in Tuning.GlowLayers downTo 1) {
-            stroke.strokeWidth = 2f * i * Tuning.GlowSpread
-            stroke.alpha = a
-            c.drawPath(p, stroke)
+        if (pass != Pass.Sharp) {
+            val a = glowAlpha(glow)
+            for (i in Tuning.GlowLayers downTo 1) {
+                stroke.strokeWidth = 2f * i * Tuning.GlowSpread
+                stroke.alpha = a
+                c.drawPath(p, stroke)
+            }
+            if (pass == Pass.GlowOnly) return
         }
         fill.alpha = (255f * alphaMul).toInt()
         c.drawPath(p, fill)
     }
 
     private fun strokeShape(p: Path, thick: Float, glow: Float) {
-        val a = glowAlpha(glow)
-        for (i in Tuning.GlowLayers downTo 1) {
-            stroke.strokeWidth = thick + 2f * i * Tuning.GlowSpread
-            stroke.alpha = a
-            c.drawPath(p, stroke)
+        if (pass != Pass.Sharp) {
+            val a = glowAlpha(glow)
+            for (i in Tuning.GlowLayers downTo 1) {
+                stroke.strokeWidth = thick + 2f * i * Tuning.GlowSpread
+                stroke.alpha = a
+                c.drawPath(p, stroke)
+            }
+            if (pass == Pass.GlowOnly) return
         }
         stroke.strokeWidth = thick
         stroke.alpha = (255f * alphaMul).toInt()
