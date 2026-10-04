@@ -18,6 +18,7 @@ object Triggers {
     const val VERY_RAPID_TAPS = "VeryRapidTaps"
     const val SWIPE = "Swipe"
     const val WAKE = "WakeUp"
+    const val MORNING_WAKE = "MorningWake"
 
     /** Curious, eyes on the tap point, then a Bounce. */
     fun tap(at: Vec2) = Reaction(
@@ -91,6 +92,15 @@ object Triggers {
         listOf(
             Step(Mood.Waking, Tuning.WakeWakingMs),
             Step(if (inSleepWindow) Mood.Tired else Mood.Curious, Tuning.WakeFollowUpMs),
+        ),
+    )
+
+    /** The 07:00 wake-up: Waking, then Happy for 8 s, then Awake. */
+    fun morningWake() = Reaction(
+        MORNING_WAKE, Priority.Device,
+        listOf(
+            Step(Mood.Waking, Tuning.MorningWakingMs),
+            Step(Mood.Happy, Tuning.MorningHappyMs),
         ),
     )
 

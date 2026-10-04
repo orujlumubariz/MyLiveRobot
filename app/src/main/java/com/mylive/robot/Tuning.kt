@@ -90,6 +90,19 @@ object Tuning {
     const val BreathSleepAmp = 0.025f
     const val TauAmbientMs = 400f    // eases drift/breathing changes between moods
 
+    // Sleep and wake (spec 04, 05)
+    const val SleepCloseMs = 1200f             // eyes droop shut over this long when going to sleep
+    const val TauSleepMs = 400f                // Sleeping entry spring
+    const val GlowTauSleepMs = 500f            // glow fades out over about 1500 ms
+    const val WakeOpenMs = 450f                // eyes open slowly when leaving Sleeping
+    const val WakePopMs = 300f                 // leaving Waking: eyes pop open with easeOutBack
+    const val WakingLiftUnits = 8f             // Waking: eyes start this low and lift as they wake
+    const val WakingLiftMs = 700f
+    const val SleepDimDelayMs = 1500L          // dim the screen only after the sleep animation has played
+    const val MorningWakeWindowMin = 30        // 07:00-07:30 plays the wake-up sequence
+    const val MorningWakingMs = 600L
+    const val MorningHappyMs = 8_000L
+
     // Per-mood idle micro-animations (spec 04)
     const val IdleGlowBlendMs = 300f          // glow overrides fade in so a mood change never pops
     const val HappyBounceUnits = 6f

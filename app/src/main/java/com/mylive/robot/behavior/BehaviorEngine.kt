@@ -46,6 +46,10 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
     // sleep / wake
     private var lastInteractionMs = 0L
     private var wakeUntilMs = 0L
+    private var sleepingSinceMs = 0L
+    private var windowChecked = false
+    private var wasInWindow = false
+    private var morningWake = false
 
     // drift
     private var driftMood = Mood.Neutral
@@ -63,6 +67,21 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (!started) start(nowMs)
         minuteOfDay = inputs.minuteOfDay
 
+        // The sleep window ending while the robot is asleep is the wake-up schedule. It counts as
+        // interaction (so idle sleep does not hold the robot down) and, at 07:00-07:30, plays the sequence.
+        val inWindow = inSleepWindow(minuteOfDay)
+        if (!windowChecked) {
+            wasInWindow = inWindow
+            windowChecked = true
+        }
+        if (wasInWindow && !inWindow && baseState == BaseState.Sleeping) {
+            lastInteractionMs = nowMs
+            wakeUntilMs = 0L
+            morningWake = minuteOfDay >= Tuning.WakeMinute &&
+                minuteOfDay < Tuning.WakeMinute + Tuning.MorningWakeWindowMin
+        }
+        wasInWindow = inWindow
+
         val next = when {
             isAsleep(nowMs) -> BaseState.Sleeping
             inputs.charging -> BaseState.Charging
@@ -70,6 +89,10 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
             else -> BaseState.Awake
         }
         if (next != baseState) onBaseChanged(next, nowMs)
+        if (morningWake) {
+            morningWake = false
+            if (baseState != BaseState.Sleeping) react(Triggers.morningWake(), nowMs)
+        }
 
         advanceReaction(nowMs)
         if (baseState == BaseState.Awake && current == null) updateDrift(nowMs)
@@ -84,7 +107,7 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
             mood = step?.mood ?: baseFace(),
             gesture = gesture,
             lookTarget = lookOverride ?: step?.look,
-            brightness = brightnessChange(),
+            brightness = brightnessChange(nowMs),
             gestureKeepsFace = keepFace,
         )
     }
@@ -147,6 +170,7 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         val previous = baseState
         baseState = next
         if (next == BaseState.Sleeping) {
+            sleepingSinceMs = nowMs
             // only a touch reaction may keep running through sleep
             val cur = current
             if (cur != null && cur.priority.ordinal > Priority.Touch.ordinal) {
@@ -164,8 +188,10 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         BaseState.Awake -> driftMood
     }
 
-    private fun brightnessChange(): Float? {
-        val wanted = if (baseState == BaseState.Sleeping && Tuning.DimWhileSleeping) {
+    private fun brightnessChange(nowMs: Long): Float? {
+        val dim = baseState == BaseState.Sleeping && Tuning.DimWhileSleeping &&
+            nowMs - sleepingSinceMs >= Tuning.SleepDimDelayMs
+        val wanted = if (dim) {
             Tuning.SleepBrightness
         } else {
             Tuning.BrightnessNormal

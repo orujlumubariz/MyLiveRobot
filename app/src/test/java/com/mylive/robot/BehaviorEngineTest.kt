@@ -91,7 +91,7 @@ class BehaviorEngineTest {
         assertEquals(BaseState.Awake, s.engine.baseState)
 
         s.inputs.minuteOfDay = min(23)
-        s.run(500)
+        s.run(2_000) // the screen dims only after the sleep animation has played
         assertEquals(BaseState.Sleeping, s.engine.baseState)
         assertEquals(Mood.Sleeping, s.last.mood)
         assertEquals(listOf(Tuning.SleepBrightness), s.brightness)

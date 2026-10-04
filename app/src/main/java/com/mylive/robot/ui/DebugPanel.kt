@@ -158,6 +158,16 @@ fun DebugPanel(
                 AssistChip(onClick = { state.scenario(12 * 60, 12, false) }, label = { Text("Low battery") })
                 AssistChip(onClick = onWake, label = { Text("Touch (wake)") })
             }
+            Text("Jump the fake clock", color = Color.Gray, fontSize = 11.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("22:59" to 22 * 60 + 59, "23:00" to 23 * 60, "06:59" to 6 * 60 + 59, "07:00" to 7 * 60, "12:00" to 12 * 60)
+                    .forEach { (label, minute) ->
+                        AssistChip(
+                            onClick = { state.fakeTimeOn = true; state.minuteOfDay = minute },
+                            label = { Text(label) },
+                        )
+                    }
+            }
             Text(
                 "A forced mood lasts until the engine changes the face; switch auto off to hold it.",
                 color = Color.Gray,

@@ -91,6 +91,8 @@ class IdleMotion(private val rng: Random) {
                 }
                 eyeWMul = 1f + Tuning.LoveBeat * k
             }
+            Mood.Waking -> eyeDy = Tuning.WakingLiftUnits *
+                (1f - Easing.easeOutQuad((t / Tuning.WakingLiftMs).coerceAtMost(1.0).toFloat()))
             Mood.Sceptic ->
                 rightEyeDy = -Tuning.SceptDriftUnits * (0.5f - 0.5f * cosCycle(Tuning.SceptDriftPeriodMs))
             Mood.Broken -> broken(dtMs)

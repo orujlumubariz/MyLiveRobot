@@ -40,6 +40,12 @@ class FaceAnimator(
     private var swap = Swap.NONE
     private var swapMs = 0f
     private var swapMult = 1f // eye `open` multiplier owned by the blink-swap
+    private var swapCloseMs = Tuning.SwapCloseMs
+    private var swapOpenMs = Tuning.SwapOpenMs
+    private var swapFrom = 0f // `open` multiplier the opening starts from (0 after a full close)
+    private var swapPops = false // open with easeOutBack
+    private var glowTarget = target.glow
+    private var glowTauMs = tauMs
     private var nextSpec: MoodSpec = target
     private var nextTauMs = tauMs
 
@@ -113,6 +119,8 @@ class FaceAnimator(
         rightTarget = spec.right
         tauMs = tauFor(newMood)
         nextSpec = spec
+        glowTarget = spec.glow
+        glowTauMs = tauFor(newMood)
         queued = null
         sinceMoodMs = 0f
         swap = Swap.NONE
@@ -131,11 +139,18 @@ class FaceAnimator(
         val spec = Moods.spec(newMood)
         val eyesDiffer = spec.left.kind != target.left.kind || spec.right.kind != target.right.kind
         val mouthDiffers = spec.mouth.kind != target.mouth.kind
+        val previous = mood
         mood = newMood
         queued = null
         sinceMoodMs = 0f
         nextSpec = spec
         nextTauMs = tauFor(newMood)
+        glowTarget = spec.glow
+        glowTauMs = if (newMood == Mood.Sleeping) Tuning.GlowTauSleepMs else nextTauMs
+        swapCloseMs = if (newMood == Mood.Sleeping) Tuning.SleepCloseMs else Tuning.SwapCloseMs
+        swapOpenMs = if (previous == Mood.Sleeping) Tuning.WakeOpenMs else Tuning.SwapOpenMs
+        swapPops = popsIn(newMood) || previous == Mood.Waking
+        swapFrom = 0f
         wink = if (newMood == Mood.Wink && winkReopen) Wink.WAIT else Wink.OFF
         winkMs = 0f
         rightMult = 1f
@@ -149,6 +164,16 @@ class FaceAnimator(
             if (mouthDiffers) {
                 fade = Fade.OUT
                 fadeMs = 0f
+            }
+            if (previous == Mood.Waking) {
+                // same eye shapes: pop open from the sleepy half-open eyes with an overshoot
+                base.leftEye.open = spec.left.open
+                base.rightEye.open = spec.right.open
+                swapFrom = Moods.spec(Mood.Waking).left.open
+                swapMult = swapFrom
+                swapOpenMs = Tuning.WakePopMs
+                swap = Swap.OPENING
+                swapMs = 0f
             }
         }
         if (lookScale(newMood) == 0f) look.recentre()
@@ -172,7 +197,7 @@ class FaceAnimator(
         m.thick = Easing.approach(m.thick, target.mouth.thick, k)
         m.dy = Easing.approach(m.dy, target.mouth.dy, k)
         m.tilt = Easing.approach(m.tilt, target.mouth.tilt, k)
-        base.glow = Easing.approach(base.glow, target.glow, k)
+        base.glow = Easing.approach(base.glow, glowTarget, Easing.springFactor(dt, glowTauMs))
         copyBaseToFace()
 
         // 2. look layer
@@ -247,10 +272,11 @@ class FaceAnimator(
             Swap.NONE -> return
             Swap.CLOSING -> {
                 swapMs += dt
-                if (swapMs < Tuning.SwapCloseMs) {
-                    swapMult = 1f - Easing.easeInOutCubic(swapMs / Tuning.SwapCloseMs)
+                if (swapMs < swapCloseMs) {
+                    swapMult = 1f - Easing.easeInOutCubic(swapMs / swapCloseMs)
                 } else {
                     swapMult = 0f
+                    swapFrom = 0f
                     val mouthDiffers = nextSpec.mouth.kind != target.mouth.kind
                     target = nextSpec
                     rightTarget = target.right
@@ -264,8 +290,9 @@ class FaceAnimator(
             }
             Swap.OPENING -> {
                 swapMs += dt
-                val t = (swapMs / Tuning.SwapOpenMs).coerceAtMost(1f)
-                swapMult = if (popsIn(mood)) Easing.easeOutBack(t) else Easing.easeInOutCubic(t)
+                val t = (swapMs / swapOpenMs).coerceAtMost(1f)
+                val eased = if (swapPops) Easing.easeOutBack(t) else Easing.easeInOutCubic(t)
+                swapMult = swapFrom + (1f - swapFrom) * eased
                 if (t >= 1f) {
                     swapMult = 1f
                     swap = Swap.NONE
@@ -382,7 +409,8 @@ class FaceAnimator(
 
     private companion object {
         fun tauFor(mood: Mood): Float = when (mood) {
-            Mood.Sad, Mood.Tired, Mood.Sleeping -> Tuning.TauSlowMs
+            Mood.Sad, Mood.Tired -> Tuning.TauSlowMs
+            Mood.Sleeping -> Tuning.TauSleepMs
             else -> Tuning.TauDefaultMs
         }
 
