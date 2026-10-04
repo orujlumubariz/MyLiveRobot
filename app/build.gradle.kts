@@ -21,9 +21,10 @@ android {
 
     buildTypes {
         release {
+            // The template also let R8 rewrite androidx/kotlin/kotlinx; that crashed the release build at start
+            // (IllegalAccessError in kotlin.collections), so only our own code is shrunk and optimised.
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }
