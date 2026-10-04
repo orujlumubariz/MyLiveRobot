@@ -90,6 +90,20 @@ object Tuning {
     const val BreathSleepAmp = 0.025f
     const val TauAmbientMs = 400f    // eases drift/breathing changes between moods
 
+    // Battery and charging (spec 03, 05)
+    const val BoltX = 900f                     // charging bolt glyph, top right
+    const val BoltY = 70f
+    const val BoltSize = 60f
+    const val BoltTauMs = 200f                 // fades in and out
+    const val ChargerSurprisedMs = 700L
+    const val ChargerHappyMs = 2_000L
+    const val DisconnectSadPercent = 30        // unplugged below this: Sad, else Curious
+    const val DisconnectSadMs = 2_000L
+    const val DisconnectCuriousMs = 1_500L
+    const val LowBatterySadMs = 2_000L
+    const val FullBatteryHappyMs = 20_000L
+    const val BatteryRearmMargin = 3           // a low-battery reaction fires again only after rising this far above its level
+
     // Sleep and wake (spec 04, 05)
     const val SleepCloseMs = 1200f             // eyes droop shut over this long when going to sleep
     const val TauSleepMs = 400f                // Sleeping entry spring

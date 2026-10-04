@@ -65,23 +65,23 @@ class BehaviorEngineTest {
     @Test fun chargerAndLowBatteryChooseTheBaseFace() {
         val s = Sim()
         s.inputs.charging = true
-        s.run(500)
+        s.run(3_000) // the plug-in reaction plays first
         assertEquals(BaseState.Charging, s.engine.baseState)
         assertEquals(Mood.Charging, s.last.mood)
 
         s.inputs.charging = false
         s.inputs.batteryPercent = 16
-        s.run(500)
+        s.run(3_000)
         assertEquals(BaseState.Awake, s.engine.baseState)
 
         s.inputs.batteryPercent = 15
-        s.run(500)
+        s.run(3_000)
         assertEquals(BaseState.LowBattery, s.engine.baseState)
         assertEquals(Mood.LowBattery, s.last.mood)
 
         // charging wins over low battery
         s.inputs.charging = true
-        s.run(500)
+        s.run(3_000)
         assertEquals(Mood.Charging, s.last.mood)
     }
 
@@ -347,9 +347,11 @@ class BehaviorEngineTest {
     @Test fun chargingAndLowBatteryHoldTheirFaceNoDrift() {
         val s = Sim(seed = 2)
         s.inputs.charging = true
+        s.run(5_000, keepAwake = true) // the plug-in reaction plays first
         s.run(30 * 60_000L, step = 1_000, keepAwake = true) { assertEquals(Mood.Charging, it.mood) }
         val t = Sim(seed = 2)
         t.inputs.batteryPercent = 10
+        t.run(5_000, keepAwake = true) // the "battery fell to 15%" reaction plays first
         t.run(30 * 60_000L, step = 1_000, keepAwake = true) { assertEquals(Mood.LowBattery, it.mood) }
     }
 
@@ -366,6 +368,7 @@ class BehaviorEngineTest {
         val s = Sim(seed, minute)
         s.inputs.batteryPercent = battery
         s.run(ms, step = 1_000, keepAwake = true)
+        // the drop to 5% also plays one Tired + Yawn reaction of its own
         return s.gestures.count { it.second == g }
     }
 
@@ -385,7 +388,7 @@ class BehaviorEngineTest {
 
     @Test fun criticalBatteryYawnsEveryMinuteOnlyAtFivePercentOrLess() {
         val critical = countGestures(1, min(12), 10 * 60_000L, Gesture.Yawn, battery = 5)
-        assertTrue("critical $critical", critical in 8..10)
+        assertTrue("critical $critical", critical in 9..11) // 1 for the drop itself + about one a minute
         assertEquals(0, countGestures(1, min(12), 10 * 60_000L, Gesture.Yawn, battery = 6))
         val charging = Sim(1)
         charging.inputs.batteryPercent = 3

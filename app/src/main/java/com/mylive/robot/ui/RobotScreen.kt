@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.Choreographer
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import com.mylive.robot.behavior.BaseState
 import com.mylive.robot.behavior.BehaviorEngine
 import com.mylive.robot.behavior.Inputs
 import com.mylive.robot.behavior.TouchInterpreter
+import com.mylive.robot.device.BatteryMonitor
 import com.mylive.robot.device.ClockSource
 import com.mylive.robot.face.FaceAnimator
 import com.mylive.robot.face.FaceRenderer.drawFace
@@ -37,6 +40,7 @@ fun RobotScreen() {
     val engine = remember { BehaviorEngine() }
     val touch = remember(engine) { TouchInterpreter(engine) }
     val clock = remember { ClockSource() }
+    val battery = remember { BatteryMonitor(context.applicationContext) }
     // Redrawn every frame: the Canvas reads this counter, which the frame callback bumps.
     var frame by remember { mutableLongStateOf(0L) }
 
@@ -47,6 +51,33 @@ fun RobotScreen() {
     var panelOpen by remember { mutableStateOf(false) }
     var page by remember { mutableIntStateOf(-1) } // -1 live face, 0 kinds gallery, 1 moods gallery
     var forcedMood by remember { mutableStateOf(Mood.Neutral) }
+
+    // Battery: sticky broadcast, registered while the screen is shown.
+    DisposableEffect(battery) {
+        battery.start()
+        onDispose { battery.stop() }
+    }
+
+    // App back in the foreground (not the first start): LookAround.
+    DisposableEffect(context, engine) {
+        val owner = generateSequence(context) { (it as? android.content.ContextWrapper)?.baseContext }
+            .filterIsInstance<LifecycleOwner>().firstOrNull()
+        var stopped = false
+        val observer = object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                stopped = true
+            }
+
+            override fun onStart(owner: LifecycleOwner) {
+                if (stopped) {
+                    stopped = false
+                    engine.onForeground(System.nanoTime() / 1_000_000L)
+                }
+            }
+        }
+        owner?.lifecycle?.addObserver(observer)
+        onDispose { owner?.lifecycle?.removeObserver(observer) }
+    }
 
     // Choreographer instead of withFrameNanos: the callback gets a primitive Long, so no boxing per frame.
     DisposableEffect(animator, engine, touch) {
@@ -71,8 +102,9 @@ fun RobotScreen() {
                 val fakeTime = debuggable && debugState.fakeTimeOn
                 val fakeBattery = debuggable && debugState.fakeBatteryOn
                 inputs.minuteOfDay = if (fakeTime) debugState.minuteOfDay else clock.minuteOfDay(nowMs)
-                inputs.batteryPercent = if (fakeBattery) debugState.batteryPercent else 100
-                inputs.charging = fakeBattery && debugState.charging
+                val real = battery.info.value
+                inputs.batteryPercent = if (fakeBattery) debugState.batteryPercent else real.percent
+                inputs.charging = if (fakeBattery) debugState.charging else real.charging
                 touch.update(nowMs)
                 val out = engine.update(nowMs, inputs)
 

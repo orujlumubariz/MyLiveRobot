@@ -51,6 +51,14 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
     private var wasInWindow = false
     private var morningWake = false
 
+    // device events
+    private var deviceSeeded = false
+    private var prevCharging = false
+    private var lowShown = false
+    private var criticalShown = false
+    private var fullShown = false
+    private var foregroundPending = false
+
     // drift
     private var driftMood = Mood.Neutral
     private var driftHolding = false
@@ -92,6 +100,11 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (morningWake) {
             morningWake = false
             if (baseState != BaseState.Sleeping) react(Triggers.morningWake(), nowMs)
+        }
+        checkDeviceEvents(nowMs, inputs)
+        if (foregroundPending) {
+            foregroundPending = false
+            react(Triggers.foreground(), nowMs)
         }
 
         advanceReaction(nowMs)
@@ -149,6 +162,15 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (asleepNow && inSleepWindow(minuteOfDay)) wakeUntilMs = nowMs + Tuning.WakeForMs
     }
 
+    /**
+     * The app came back to the foreground: counts as interaction (it wakes an idle-asleep robot) and
+     * plays a LookAround once the base state has been re-evaluated.
+     */
+    fun onForeground(nowMs: Long) {
+        noteInteraction(nowMs)
+        foregroundPending = true
+    }
+
     private fun start(nowMs: Long) {
         started = true
         lastInteractionMs = nowMs
@@ -199,6 +221,55 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (wanted == lastBrightness) return null
         lastBrightness = wanted
         return wanted
+    }
+
+    // ---- device events ----------------------------------------------------------------
+
+    /** Charger plug and unplug, battery thresholds and reaching 100%, found by watching [inputs] change. */
+    private fun checkDeviceEvents(nowMs: Long, inputs: Inputs) {
+        val pct = inputs.batteryPercent
+        val chg = inputs.charging
+        if (!deviceSeeded) { // the first reading is the starting point, not an event
+            deviceSeeded = true
+            prevCharging = chg
+            lowShown = !chg && pct <= Tuning.LowBatteryPercent
+            criticalShown = !chg && pct <= Tuning.CriticalBatteryPercent
+            fullShown = chg && pct >= 100
+            return
+        }
+        if (chg != prevCharging) {
+            prevCharging = chg
+            if (chg) {
+                react(Triggers.chargerConnected(), nowMs)
+                lowShown = false
+                criticalShown = false
+                fullShown = pct >= 100 // plugging in at 100% is not "reaching" 100%
+            } else {
+                react(Triggers.chargerDisconnected(pct < Tuning.DisconnectSadPercent), nowMs)
+                fullShown = false
+                lowShown = pct <= Tuning.LowBatteryPercent // the disconnect reaction already covers it
+                criticalShown = pct <= Tuning.CriticalBatteryPercent
+            }
+            return
+        }
+        if (!chg) {
+            if (pct <= Tuning.CriticalBatteryPercent && !criticalShown) {
+                criticalShown = true
+                lowShown = true
+                react(Triggers.batteryCritical(), nowMs)
+            } else if (pct <= Tuning.LowBatteryPercent && !lowShown) {
+                lowShown = true
+                react(Triggers.batteryLow(), nowMs)
+            }
+            if (pct > Tuning.LowBatteryPercent + Tuning.BatteryRearmMargin) lowShown = false
+            if (pct > Tuning.CriticalBatteryPercent + Tuning.BatteryRearmMargin) criticalShown = false
+        } else {
+            if (pct >= 100 && !fullShown) {
+                fullShown = true
+                react(Triggers.batteryFull(), nowMs)
+            }
+            if (pct < 100) fullShown = false
+        }
     }
 
     // ---- reactions --------------------------------------------------------------------

@@ -42,4 +42,6 @@ class FaceParams(
     var scale: Float = 1f,
     /** 0..1 for the whole face (Broken blackout). */
     var alpha: Float = 1f,
+    /** 0..1: the charging bolt glyph in the top right corner. */
+    var bolt: Float = 0f,
 )

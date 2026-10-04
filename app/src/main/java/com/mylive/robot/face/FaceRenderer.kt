@@ -50,6 +50,7 @@ object FaceRenderer {
         drawEye(face.leftEye, Tuning.LeftEyeX, 1f, face.glow)
         drawEye(face.rightEye, Tuning.RightEyeX, -1f, face.glow)
         drawMouth(face.mouth, face.glow)
+        drawBolt(face.bolt, face.glow)
         c.restore()
         alphaMul = faceAlpha
     }
@@ -243,6 +244,26 @@ object FaceRenderer {
         rect.set(left, cy - barH / 2f, left + inner * Tuning.BatteryBarFraction, cy + barH / 2f)
         path.reset()
         path.addRoundRect(rect, 3f, 3f, Path.Direction.CW)
+    }
+
+    /** Small lightning bolt, top right: shown with the Charging face, fades with [bolt]. */
+    private fun drawBolt(bolt: Float, glow: Float) {
+        if (bolt <= 0.01f) return
+        val saved = alphaMul
+        alphaMul = faceAlpha * bolt.coerceIn(0f, 1f)
+        val s = Tuning.BoltSize / 60f
+        val cx = Tuning.BoltX
+        val cy = Tuning.BoltY
+        path.reset()
+        path.moveTo(cx + 6f * s, cy - 30f * s)
+        path.lineTo(cx - 12f * s, cy + 3f * s)
+        path.lineTo(cx - 1f * s, cy + 3f * s)
+        path.lineTo(cx - 6f * s, cy + 30f * s)
+        path.lineTo(cx + 12f * s, cy - 5f * s)
+        path.lineTo(cx + 1f * s, cy - 5f * s)
+        path.close()
+        fillShape(path, glow)
+        alphaMul = saved
     }
 
     // ---- primitives: shape + stacked glow layers --------------------------------------

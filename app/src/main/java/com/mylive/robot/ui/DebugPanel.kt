@@ -158,6 +158,17 @@ fun DebugPanel(
                 AssistChip(onClick = { state.scenario(12 * 60, 12, false) }, label = { Text("Low battery") })
                 AssistChip(onClick = onWake, label = { Text("Touch (wake)") })
             }
+            Text("Battery events (turns the fake battery on)", color = Color.Gray, fontSize = 11.sp)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                AssistChip(onClick = { state.fakeBatteryOn = true; state.charging = true }, label = { Text("Plug in") })
+                AssistChip(onClick = { state.fakeBatteryOn = true; state.charging = false }, label = { Text("Unplug") })
+                listOf(16, 15, 5, 99, 100).forEach { pct ->
+                    AssistChip(
+                        onClick = { state.fakeBatteryOn = true; state.batteryPercent = pct },
+                        label = { Text("$pct%") },
+                    )
+                }
+            }
             Text("Jump the fake clock", color = Color.Gray, fontSize = 11.sp)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("22:59" to 22 * 60 + 59, "23:00" to 23 * 60, "06:59" to 6 * 60 + 59, "07:00" to 7 * 60, "12:00" to 12 * 60)

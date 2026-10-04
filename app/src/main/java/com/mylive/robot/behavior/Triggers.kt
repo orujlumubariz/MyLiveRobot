@@ -19,6 +19,12 @@ object Triggers {
     const val SWIPE = "Swipe"
     const val WAKE = "WakeUp"
     const val MORNING_WAKE = "MorningWake"
+    const val CHARGER_CONNECTED = "ChargerConnected"
+    const val CHARGER_DISCONNECTED = "ChargerDisconnected"
+    const val BATTERY_LOW = "BatteryLow"
+    const val BATTERY_CRITICAL = "BatteryCritical"
+    const val BATTERY_FULL = "BatteryFull"
+    const val FOREGROUND = "Foreground"
 
     /** Curious, eyes on the tap point, then a Bounce. */
     fun tap(at: Vec2) = Reaction(
@@ -102,6 +108,38 @@ object Triggers {
             Step(Mood.Waking, Tuning.MorningWakingMs),
             Step(Mood.Happy, Tuning.MorningHappyMs),
         ),
+    )
+
+    /** Plugged in: Surprised, Happy, then the Charging base face. */
+    fun chargerConnected() = Reaction(
+        CHARGER_CONNECTED, Priority.Device,
+        listOf(Step(Mood.Surprised, Tuning.ChargerSurprisedMs), Step(Mood.Happy, Tuning.ChargerHappyMs)),
+    )
+
+    /** Unplugged: Sad if the battery is under 30%, otherwise Curious. */
+    fun chargerDisconnected(lowBattery: Boolean) = Reaction(
+        CHARGER_DISCONNECTED, Priority.Device,
+        listOf(
+            if (lowBattery) Step(Mood.Sad, Tuning.DisconnectSadMs) else Step(Mood.Curious, Tuning.DisconnectCuriousMs),
+        ),
+    )
+
+    /** Battery fell to 15%: Sad, then the Low battery base face. */
+    fun batteryLow() = Reaction(BATTERY_LOW, Priority.Device, listOf(Step(Mood.Sad, Tuning.LowBatterySadMs)))
+
+    /** Battery fell to 5%: Tired with a Yawn, then the Low battery base face. */
+    fun batteryCritical() = Reaction(
+        BATTERY_CRITICAL, Priority.Device,
+        listOf(Step(Mood.Tired, Gesture.Yawn.durationMs.toLong(), gesture = Gesture.Yawn)),
+    )
+
+    /** Reached 100% on the charger: Happy for 20 s once, then the Charging face stays. */
+    fun batteryFull() = Reaction(BATTERY_FULL, Priority.Device, listOf(Step(Mood.Happy, Tuning.FullBatteryHappyMs)))
+
+    /** App back in the foreground: LookAround on whatever face is showing. */
+    fun foreground() = Reaction(
+        FOREGROUND, Priority.Device,
+        listOf(Step(null, Gesture.LookAround.durationMs.toLong(), gesture = Gesture.LookAround)),
     )
 
     @Suppress("unused")

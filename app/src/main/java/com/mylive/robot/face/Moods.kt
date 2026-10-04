@@ -40,6 +40,8 @@ class MoodSpec(
     val right: EyeSpec = left,
     val mouth: MouthSpec = MouthSpec(),
     val glow: Float = Tuning.DefaultGlow,
+    /** 1 = show the charging bolt glyph. */
+    val bolt: Float = 0f,
 )
 
 object Moods {
@@ -130,7 +132,8 @@ object Moods {
         Mood.Charging to MoodSpec(
             left = EyeSpec(EyeKind.ARC_UP, w = 110f, h = 50f),
             mouth = MouthSpec(w = 70f),
-            glow = 1.0f, // pulses 0.5..1.0 (task 9); bolt glyph arrives with task 15
+            glow = 1.0f, // pulses 0.5..1.0 (task 9)
+            bolt = 1f,
         ),
         Mood.LowBattery to MoodSpec(
             left = EyeSpec(EyeKind.RECT, w = 80f, h = 150f, open = 0.55f, lidTop = 0.3f, dy = 10f),
@@ -147,6 +150,7 @@ object Moods {
         applyEye(face.rightEye, spec.right)
         applyMouth(face.mouth, spec.mouth)
         face.glow = spec.glow
+        face.bolt = spec.bolt
     }
 
     fun apply(face: FaceParams, mood: Mood) = apply(face, spec(mood))

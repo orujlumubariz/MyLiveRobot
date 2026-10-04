@@ -15,7 +15,7 @@ import kotlin.random.Random
  * numbers while closed, open). If only the mouth kind differs, the mouth cross-fades. Otherwise
  * the numbers just ease. Requests closer than [Tuning.MinMoodChangeMs] are queued, latest wins.
  */
-class FaceAnimator(
+class   FaceAnimator(
     initial: Mood = Mood.Neutral,
     rng: Random = Random.Default,
     private val winkReopen: Boolean = Tuning.WinkReopenEnabled,
@@ -198,6 +198,7 @@ class FaceAnimator(
         m.dy = Easing.approach(m.dy, target.mouth.dy, k)
         m.tilt = Easing.approach(m.tilt, target.mouth.tilt, k)
         base.glow = Easing.approach(base.glow, glowTarget, Easing.springFactor(dt, glowTauMs))
+        base.bolt = Easing.approach(base.bolt, target.bolt, Easing.springFactor(dt, Tuning.BoltTauMs))
         copyBaseToFace()
 
         // 2. look layer
@@ -392,6 +393,7 @@ class FaceAnimator(
         d.tilt = s.tilt
         d.dx = s.dx
         face.glow = base.glow
+        face.bolt = base.bolt
     }
 
     private fun copyEye(s: EyeParams, d: EyeParams) {
