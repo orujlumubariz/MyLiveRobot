@@ -21,10 +21,18 @@ class Step(
     val durationMs: Long,
     val gesture: Gesture? = null,
     val look: Vec2? = null,
+    /** Play [gesture] on the current face instead of swapping to the gesture's own face. */
+    val keepFace: Boolean = false,
 )
 
 /** A short sequence that overrides the base face, then hands back. */
-class Reaction(val name: String, val priority: Priority, val steps: List<Step>) {
+class Reaction(
+    val name: String,
+    val priority: Priority,
+    val steps: List<Step>,
+    /** Escalations such as rapid taps skip the touch debounce. */
+    val ignoreDebounce: Boolean = false,
+) {
     init {
         require(steps.isNotEmpty()) { "a reaction needs at least one step" }
     }
@@ -47,4 +55,6 @@ data class BehaviorOutput(
     val lookTarget: Vec2?,
     /** Window brightness 0..1, [com.mylive.robot.Tuning.BrightnessNormal] = give control back, null = leave as is. */
     val brightness: Float?,
+    /** True when [gesture] should keep the current face (Step.keepFace). */
+    val gestureKeepsFace: Boolean = false,
 )

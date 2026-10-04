@@ -7,7 +7,7 @@ enum class Mood {
     // core
     Neutral, Happy, Sad, Angry, Tired, Surprised, Love,
     // reaction
-    Wink, Sceptic, Denying,
+    Wink, WinkLeft, Sceptic, Denying,
     // glitch
     Broken, Crazy,
     // added states
@@ -79,6 +79,12 @@ object Moods {
             left = EyeSpec(),
             right = EyeSpec(EyeKind.ARC_UP, w = 100f, h = 40f),
             mouth = MouthSpec(tilt = 4f),
+            glow = 0.9f,
+        ),
+        Mood.WinkLeft to MoodSpec(
+            left = EyeSpec(EyeKind.ARC_UP, w = 100f, h = 40f),
+            right = EyeSpec(),
+            mouth = MouthSpec(tilt = -4f),
             glow = 0.9f,
         ),
         Mood.Sceptic to MoodSpec(

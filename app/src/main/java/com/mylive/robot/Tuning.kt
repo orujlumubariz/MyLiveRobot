@@ -193,6 +193,33 @@ object Tuning {
     const val LookAroundAfternoonMaxMs = 90_000L
     const val GestureRetryMs = 5_000L          // retry delay when a timer gesture was outranked
 
+    // Touch (spec 05)
+    const val LongPressMs = 600L
+    const val PetMs = 1000L                    // moving finger for this long = petting
+    const val DoubleTapMs = 250L               // second tap within this = double tap; a lone tap waits this long
+    const val RapidTapCount = 5
+    const val RapidTapWindowMs = 2000L
+    const val VeryRapidTapCount = 10
+    const val VeryRapidTapWindowMs = 3000L
+    const val SwipeSpeedPxPerS = 2000f
+    const val EyeTapRadius = 120f              // virtual units around an eye centre
+    const val TapLookMs = 450L                 // tap reaction: look at the tap, then bounce
+    const val TapBounceMs = 450L
+    const val EyeTapMs = 900L
+    const val DoubleTapReactionMs = 1200L
+    const val HappyReleaseMs = 2000L
+    const val LoveReleaseMs = 3000L
+    const val RapidAngryMs = 3000L
+    const val RapidDenyMs = 1000L
+    const val GlitchBrokenMs = 3000L
+    const val GlitchCrazyMs = 2000L
+    const val SwipeReactionMs = 700L
+    const val WakeWakingMs = 600L
+    const val WakeFollowUpMs = 900L
+    const val HoldForever = 30_000L            // while held: the release ends or replaces it; capped in case an up event is lost
+    const val LookFollowScale = 1.5f           // touch follow may reach this far past the idle ellipse
+    const val LookFollowTauMs = 40f            // about 120 ms to settle
+
     // Debug panel
     const val DebugHoldMs = 1000L           // two-finger hold to open
     const val DebugPanelWidthDp = 340

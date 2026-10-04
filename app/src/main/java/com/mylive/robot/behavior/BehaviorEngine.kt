@@ -17,8 +17,19 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
     var baseState = BaseState.Awake
         private set
 
-    /** Name of the running reaction, for the debug panel. */
+    /** Name of the running reaction, for the debug panel and the touch layer. */
     val reactionName: String? get() = current?.name
+
+    /** True while the local time is inside the sleep window. */
+    val inSleepWindowNow: Boolean get() = inSleepWindow(minuteOfDay)
+
+    /**
+     * Overrides the running reaction's look target, e.g. to follow a petting finger. Cleared when the
+     * reaction changes or ends.
+     */
+    fun setLookTarget(target: Vec2?) {
+        lookOverride = target
+    }
 
     private var started = false
     private var minuteOfDay = 12 * 60
@@ -29,6 +40,8 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
     private var stepStartMs = 0L
     private var lastReactionStartMs = Long.MIN_VALUE / 2
     private var pendingGesture: Gesture? = null
+    private var pendingKeepFace = false
+    private var lookOverride: Vec2? = null
 
     // sleep / wake
     private var lastInteractionMs = 0L
@@ -64,12 +77,15 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
 
         val step = current?.steps?.get(stepIndex)
         val gesture = pendingGesture
+        val keepFace = pendingKeepFace
         pendingGesture = null
+        pendingKeepFace = false
         return BehaviorOutput(
             mood = step?.mood ?: baseFace(),
             gesture = gesture,
-            lookTarget = step?.look,
+            lookTarget = lookOverride ?: step?.look,
             brightness = brightnessChange(),
+            gestureKeepsFace = keepFace,
         )
     }
 
@@ -84,7 +100,7 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (cur != null) {
             if (reaction.priority.ordinal > cur.priority.ordinal) return false
             if (reaction.priority == Priority.Touch && cur.priority == Priority.Touch &&
-                nowMs - lastReactionStartMs < Tuning.ReactionDebounceMs
+                !reaction.ignoreDebounce && nowMs - lastReactionStartMs < Tuning.ReactionDebounceMs
             ) {
                 return false
             }
@@ -93,7 +109,9 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         stepIndex = 0
         stepStartMs = nowMs
         lastReactionStartMs = nowMs
+        lookOverride = null
         pendingGesture = reaction.steps[0].gesture
+        pendingKeepFace = reaction.steps[0].keepFace
         return true
     }
 
@@ -131,7 +149,10 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
         if (next == BaseState.Sleeping) {
             // only a touch reaction may keep running through sleep
             val cur = current
-            if (cur != null && cur.priority.ordinal > Priority.Touch.ordinal) current = null
+            if (cur != null && cur.priority.ordinal > Priority.Touch.ordinal) {
+                current = null
+                lookOverride = null
+            }
         }
         if (next == BaseState.Awake || previous == BaseState.Sleeping) resetDrift(nowMs)
     }
@@ -165,9 +186,11 @@ class BehaviorEngine(private val rng: Random = Random.Default) {
             stepIndex++
             if (stepIndex >= cur.steps.size) {
                 current = null
+                lookOverride = null
                 return
             }
             pendingGesture = cur.steps[stepIndex].gesture
+            pendingKeepFace = cur.steps[stepIndex].keepFace
         }
     }
 

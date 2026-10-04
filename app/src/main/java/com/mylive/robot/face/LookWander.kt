@@ -20,8 +20,45 @@ class LookWander(private val rng: Random) {
     private var moveMs = Tuning.LookMoveMs // starts finished
     private var waitMs = nextInterval()
 
+    private var following = false
+    private var followX = 0f
+    private var followY = 0f
+
+    /**
+     * Touch follow (spec 04): look toward a normalised screen point, clamped to the idle ellipse
+     * scaled by [Tuning.LookFollowScale]. Overrides the wander until [release].
+     */
+    fun follow(nx: Float, ny: Float) {
+        var tx = (nx - 0.5f) * 2f * Tuning.LookRangeX * Tuning.LookFollowScale
+        var ty = (ny - 0.5f) * 2f * Tuning.LookRangeY * Tuning.LookFollowScale
+        val ex = tx / (Tuning.LookRangeX * Tuning.LookFollowScale)
+        val ey = ty / (Tuning.LookRangeY * Tuning.LookFollowScale)
+        val r = sqrt(ex * ex + ey * ey)
+        if (r > 1f) {
+            tx /= r
+            ty /= r
+        }
+        followX = tx
+        followY = ty
+        following = true
+    }
+
+    /** Back to idle wander: eases to centre first. */
+    fun release() {
+        if (!following) return
+        following = false
+        moveTo(0f, 0f)
+        waitMs = nextInterval()
+    }
+
     /** @param rangeScale per-mood scale of the wander range; 0 means look straight ahead. */
     fun update(dtMs: Float, rangeScale: Float) {
+        if (following) {
+            val k = Easing.springFactor(dtMs, Tuning.LookFollowTauMs)
+            dx = Easing.approach(dx, followX, k)
+            dy = Easing.approach(dy, followY, k)
+            return
+        }
         waitMs -= dtMs
         if (waitMs <= 0f) {
             pick(rangeScale)

@@ -74,14 +74,19 @@ class FaceAnimator(
     }
 
     /** Plays a one-shot gesture. Gestures that have a face show it instantly, then return to the previous mood. */
-    fun play(g: Gesture) {
+    fun play(g: Gesture, keepFace: Boolean = false) {
         if (!faceOverridden) returnMood = mood
-        val gestureFace = g.face
+        val gestureFace = if (keepFace) null else g.face
         if (gestureFace != null && mood != gestureFace) {
             snapTo(gestureFace)
             faceOverridden = true
         }
         gesture.start(g)
+    }
+
+    /** Eyes look toward a normalised screen point (touch follow); null goes back to idle wander. */
+    fun lookAt(target: com.mylive.robot.behavior.Vec2?) {
+        if (target == null) look.release() else look.follow(target.x, target.y)
     }
 
     fun setMood(newMood: Mood) {

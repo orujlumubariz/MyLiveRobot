@@ -6,8 +6,6 @@ import android.content.ContextWrapper
 import android.view.Choreographer
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -20,13 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.mylive.robot.Tuning
 import com.mylive.robot.behavior.BaseState
 import com.mylive.robot.behavior.BehaviorEngine
 import com.mylive.robot.behavior.Inputs
+import com.mylive.robot.behavior.TouchInterpreter
 import com.mylive.robot.device.ClockSource
 import com.mylive.robot.face.FaceAnimator
 import com.mylive.robot.face.FaceRenderer.drawFace
@@ -37,6 +35,7 @@ fun RobotScreen() {
     val context = LocalContext.current
     val animator = remember { FaceAnimator() }
     val engine = remember { BehaviorEngine() }
+    val touch = remember(engine) { TouchInterpreter(engine) }
     val clock = remember { ClockSource() }
     // Redrawn every frame: the Canvas reads this counter, which the frame callback bumps.
     var frame by remember { mutableLongStateOf(0L) }
@@ -50,7 +49,7 @@ fun RobotScreen() {
     var forcedMood by remember { mutableStateOf(Mood.Neutral) }
 
     // Choreographer instead of withFrameNanos: the callback gets a primitive Long, so no boxing per frame.
-    DisposableEffect(animator, engine) {
+    DisposableEffect(animator, engine, touch) {
         val choreographer = Choreographer.getInstance()
         val inputs = Inputs()
         val callback = object : Choreographer.FrameCallback {
@@ -74,6 +73,7 @@ fun RobotScreen() {
                 inputs.minuteOfDay = if (fakeTime) debugState.minuteOfDay else clock.minuteOfDay(nowMs)
                 inputs.batteryPercent = if (fakeBattery) debugState.batteryPercent else 100
                 inputs.charging = fakeBattery && debugState.charging
+                touch.update(nowMs)
                 val out = engine.update(nowMs, inputs)
 
                 if (debuggable && (shownState != engine.baseState || shownReaction != engine.reactionName)) {
@@ -85,12 +85,16 @@ fun RobotScreen() {
                 val auto = !debuggable || debugState.autoBehavior
                 if (auto && !wasAuto) engineMood = null // back on: resync the face with the engine
                 wasAuto = auto
-                if (!auto) return
+                if (!auto) {
+                    animator.lookAt(null)
+                    return
+                }
                 if (out.mood != engineMood) {
                     engineMood = out.mood
                     animator.setMood(out.mood)
                 }
-                out.gesture?.let { animator.play(it) }
+                out.gesture?.let { animator.play(it, out.gestureKeepsFace) }
+                animator.lookAt(out.lookTarget)
                 out.brightness?.let { setWindowBrightness(context, it) }
             }
         }
@@ -98,13 +102,6 @@ fun RobotScreen() {
         onDispose { choreographer.removeFrameCallback(callback) }
     }
 
-    // Placeholder until the full touch triggers (task 13): any touch counts as interaction and wakes the robot.
-    val anyTouch = Modifier.pointerInput(engine) {
-        awaitEachGesture {
-            awaitFirstDown(requireUnconsumed = false)
-            engine.noteInteraction(System.nanoTime() / 1_000_000L)
-        }
-    }
     val holdForPanel = if (debuggable) {
         Modifier.twoFingerHold(Tuning.DebugHoldMs) { panelOpen = true }
     } else {
@@ -115,7 +112,7 @@ fun RobotScreen() {
             .fillMaxSize()
             .background(Tuning.BackgroundColor)
             .testTag("robot-root")
-            .then(anyTouch)
+            .robotTouch(touch)
             .then(holdForPanel),
     ) {
         if (page >= 0) {
