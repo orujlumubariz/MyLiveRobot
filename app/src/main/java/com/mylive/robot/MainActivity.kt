@@ -14,7 +14,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContent { RobotScreen() }
+        // Debug builds only (RobotScreen checks): `adb shell am start -n com.mylive.robot/.MainActivity --ez debug_panel true`
+        // opens the debug panel at start, handy when you cannot hold two fingers on the screen.
+        setContent { RobotScreen(openPanelAtStart = intent.getBooleanExtra("debug_panel", false)) }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

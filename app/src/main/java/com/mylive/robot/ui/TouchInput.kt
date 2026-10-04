@@ -9,15 +9,17 @@ import androidx.compose.ui.layout.onSizeChanged
 import com.mylive.robot.behavior.TouchInterpreter
 
 /**
- * Forwards single-finger input to [interpreter]. A second finger cancels the touch, so the
+ * Forwards single-finger input to [interpreter]. When [enabled] is false (the debug panel is open) the
+ * face ignores touch completely. A second finger cancels the touch, so the
  * two-finger debug hold never also counts as a tap. Events are stamped with the same clock the
  * frame loop uses (System.nanoTime based).
  */
-fun Modifier.robotTouch(interpreter: TouchInterpreter): Modifier =
+fun Modifier.robotTouch(interpreter: TouchInterpreter, enabled: Boolean = true): Modifier =
     onSizeChanged {
         interpreter.screenW = it.width.toFloat()
         interpreter.screenH = it.height.toFloat()
-    }.pointerInput(interpreter) {
+    }.pointerInput(interpreter, enabled) {
+        if (!enabled) return@pointerInput
         interpreter.slopPx = viewConfiguration.touchSlop
         awaitEachGesture {
             val first = awaitFirstDown(requireUnconsumed = false)

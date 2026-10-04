@@ -31,7 +31,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
@@ -131,7 +133,8 @@ fun DebugPanel(
                 .testTag("debug-panel")
                 .width(Tuning.DebugPanelWidthDp.dp)
                 .fillMaxHeight()
-                .background(Color(0xEE0B1214))
+                .background(Color(0xFF121E21)) // solid, so the face behind it never shows through
+                .drawBehind { drawRect(Tuning.FaceColor.copy(alpha = 0.35f), size = Size(2.dp.toPx(), size.height)) }
                 .verticalScroll(rememberScrollState())
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
